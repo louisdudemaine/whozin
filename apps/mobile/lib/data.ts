@@ -157,6 +157,9 @@ export async function fetchConversations(meId: string): Promise<ConversationPrev
       unread: unreadByConv.get(c.id) ?? 0,
       status: c.status,
       iRequested: c.requested_by === meId,
+      isGroup: c.is_group ?? false,
+      title: c.title ?? null,
+      members: [],
     };
   });
 }

@@ -11,6 +11,7 @@ import {
   acceptConversation,
   declineConversation,
   fetchConversation,
+  fetchConversationMembers,
   fetchMessages,
   markConversationRead,
   sendMessage,
@@ -25,6 +26,9 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
   const { t, locale } = useT();
   const [messages, setMessages] = useState<Message[]>([]);
   const [other, setOther] = useState<Profile | null>(null);
+  const [isGroup, setIsGroup] = useState(false);
+  const [groupTitle, setGroupTitle] = useState("");
+  const [membersById, setMembersById] = useState<Map<string, Profile>>(new Map());
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
@@ -46,16 +50,30 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
         router.replace("/messages");
         return;
       }
-      const otherId = conv.user_a === meId ? conv.user_b : conv.user_a;
-      const [{ data: prof }, msgs] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", otherId).maybeSingle(),
-        fetchMessages(id),
-      ]);
+      const msgs = await fetchMessages(id);
       if (!alive) return;
-      setOther((prof as Profile) ?? null);
       setMessages(msgs);
-      setPending(conv.status === "pending");
+      setPending(conv.status === "pending" && !conv.is_group);
       setIAmRecipient(conv.requested_by !== meId);
+
+      if (conv.is_group) {
+        const mem = await fetchConversationMembers(id);
+        if (!alive) return;
+        setIsGroup(true);
+        setMembersById(new Map(mem.map((p) => [p.id, p])));
+        const others = mem.filter((p) => p.id !== meId);
+        setGroupTitle(
+          conv.title ||
+            (others.length <= 3
+              ? others.map((p) => p.display_name || p.username).join(", ")
+              : `${others.slice(0, 2).map((p) => p.display_name || p.username).join(", ")} +${others.length - 2}`)
+        );
+      } else {
+        const otherId = conv.user_a === meId ? conv.user_b : conv.user_a;
+        const { data: prof } = await supabase.from("profiles").select("*").eq("id", otherId).maybeSingle();
+        if (!alive) return;
+        setOther((prof as Profile) ?? null);
+      }
       setLoading(false);
       markConversationRead(id).catch(() => {});
     })();
@@ -119,10 +137,17 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     <div className="flex h-[100dvh] flex-col">
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/90 px-4 py-2.5 backdrop-blur-md pt-[max(10px,env(safe-area-inset-top))]">
         <Link href="/messages" className="text-text-dim">←</Link>
-        <Link href={`/u/${other?.username ?? ""}`} className="flex items-center gap-2.5">
-          <Avatar profile={other} size={34} />
-          <span className="font-semibold">{other?.display_name || other?.username || ""}</span>
-        </Link>
+        {isGroup ? (
+          <div className="flex items-center gap-2.5">
+            <span className="brand-gradient flex h-9 w-9 items-center justify-center rounded-full text-lg">👥</span>
+            <span className="font-semibold">{groupTitle}</span>
+          </div>
+        ) : (
+          <Link href={`/u/${other?.username ?? ""}`} className="flex items-center gap-2.5">
+            <Avatar profile={other} size={34} />
+            <span className="font-semibold">{other?.display_name || other?.username || ""}</span>
+          </Link>
+        )}
       </header>
 
       <div className="flex-1 overflow-y-auto px-3 py-4">
@@ -132,33 +157,42 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
           <div className="flex flex-col gap-1.5">
             {messages.map((m) => {
               const mine = m.sender_id === meId;
+              const sender = isGroup && !mine ? membersById.get(m.sender_id) : undefined;
               return (
                 <div
                   key={m.id}
-                  className={mine ? "flex justify-end" : "flex justify-start"}
+                  className={mine ? "flex justify-end" : "flex items-end justify-start gap-2"}
                 >
-                  {m.image_url ? (
-                    <span className="max-w-[70%] overflow-hidden rounded-2xl">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={m.image_url} alt="" className="w-full object-cover" />
-                      {m.body && (
-                        <span className="block px-1 pt-1 text-[15px]" style={{ color: "var(--text)" }}>
-                          {m.body}
-                        </span>
-                      )}
-                    </span>
-                  ) : (
-                    <span
-                      className="max-w-[78%] whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[15px]"
-                      style={
-                        mine
-                          ? { background: "var(--brand)", color: "#fff", borderBottomRightRadius: 4 }
-                          : { background: "var(--surface-2)", color: "var(--text)", borderBottomLeftRadius: 4 }
-                      }
-                    >
-                      {m.body}
-                    </span>
-                  )}
+                  {isGroup && !mine && <Avatar profile={sender} size={26} />}
+                  <div className="flex max-w-[80%] flex-col">
+                    {isGroup && !mine && (
+                      <span className="mb-0.5 ml-1 text-[11px] text-text-dim">
+                        {sender?.display_name || sender?.username}
+                      </span>
+                    )}
+                    {m.image_url ? (
+                      <span className="overflow-hidden rounded-2xl">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={m.image_url} alt="" className="w-full object-cover" />
+                        {m.body && (
+                          <span className="block px-1 pt-1 text-[15px]" style={{ color: "var(--text)" }}>
+                            {m.body}
+                          </span>
+                        )}
+                      </span>
+                    ) : (
+                      <span
+                        className="whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[15px]"
+                        style={
+                          mine
+                            ? { background: "var(--brand)", color: "#fff", borderBottomRightRadius: 4 }
+                            : { background: "var(--surface-2)", color: "var(--text)", borderBottomLeftRadius: 4 }
+                        }
+                      >
+                        {m.body}
+                      </span>
+                    )}
+                  </div>
                 </div>
               );
             })}

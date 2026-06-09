@@ -21,7 +21,7 @@ export const messages = {
       haveAccount: "Déjà un compte ?",
       noAccount: "Pas encore de compte ?",
       checkEmail: "Vérifie tes courriels pour confirmer ton compte.",
-      welcome: "Bienvenue sur Who's In",
+      welcome: "Bienvenue sur Whozin",
       welcomeSub: "Connecte-toi pour voir qui est sorti ce soir.",
     },
     map: {
@@ -111,7 +111,7 @@ export const messages = {
       haveAccount: "Already have an account?",
       noAccount: "No account yet?",
       checkEmail: "Check your email to confirm your account.",
-      welcome: "Welcome to Who's In",
+      welcome: "Welcome to Whozin",
       welcomeSub: "Sign in to see who's out tonight.",
     },
     map: {

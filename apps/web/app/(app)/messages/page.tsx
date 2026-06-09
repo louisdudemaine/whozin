@@ -7,7 +7,7 @@ import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
 import { fetchConversations } from "@/lib/data";
-import { Avatar } from "@/components/Avatar";
+import { ConvAvatar, convName } from "@/components/ConvAvatar";
 
 export default function MessagesPage() {
   const { profile } = useAuth();
@@ -43,7 +43,14 @@ export default function MessagesPage() {
     <div className="min-h-[100dvh]">
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/90 px-4 py-3 backdrop-blur-md pt-[max(12px,env(safe-area-inset-top))]">
         <Link href="/feed" className="text-text-dim">←</Link>
-        <h1 className="text-xl font-black">{profile?.username ? `@${profile.username}` : "Messages"}</h1>
+        <h1 className="flex-1 text-xl font-black">{profile?.username ? `@${profile.username}` : "Messages"}</h1>
+        <Link
+          href="/messages/new"
+          aria-label="Nouveau groupe"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-border text-xl"
+        >
+          ＋
+        </Link>
       </header>
 
       {loading ? (
@@ -79,11 +86,12 @@ export default function MessagesPage() {
                   href={`/messages/${c.id}`}
                   className="flex items-center gap-3 border-b border-border px-4 py-3"
                 >
-                  <Avatar profile={c.other} size={52} />
+                  <ConvAvatar conv={c} size={52} />
                   <div className="min-w-0 flex-1">
                     <p className="flex items-center justify-between">
                       <span className="truncate font-semibold">
-                        {c.other?.display_name || c.other?.username}
+                        {convName(c)}
+                        {c.isGroup && <span className="ml-1 text-xs font-normal text-text-dim">· groupe</span>}
                       </span>
                       <span className="ml-2 shrink-0 text-xs text-text-dim">
                         {timeAgo(c.last_message_at, locale)}

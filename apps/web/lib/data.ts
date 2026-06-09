@@ -308,6 +308,16 @@ export async function fetchProfileStats(
   };
 }
 
+/** Les profils que `meId` suit (candidats pour un groupe). */
+export async function fetchFollowing(meId: string): Promise<Profile[]> {
+  const supabase = getSupabase();
+  const { data: rows } = await supabase.from("follows").select("following_id").eq("follower_id", meId);
+  const ids = ((rows ?? []) as { following_id: string }[]).map((r) => r.following_id);
+  if (ids.length === 0) return [];
+  const { data: profiles } = await supabase.from("profiles").select(PROFILE_COLS).in("id", ids);
+  return (profiles ?? []) as Profile[];
+}
+
 export async function follow(followerId: string, followingId: string): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase
@@ -345,7 +355,7 @@ export async function getOrCreateConversation(otherId: string): Promise<string> 
   return data as string;
 }
 
-/** Boîte de réception : conversations + autre profil + dernier message + non-lus. */
+/** Boîte de réception : conversations (1-1 + groupes) + membres + dernier message + non-lus. */
 export async function fetchConversations(meId: string): Promise<ConversationPreview[]> {
   const supabase = getSupabase();
   const { data: convs, error } = await supabase
@@ -355,37 +365,43 @@ export async function fetchConversations(meId: string): Promise<ConversationPrev
   if (error) throw error;
   const conversations = (convs ?? []) as Conversation[];
   if (conversations.length === 0) return [];
-
-  const otherIds = [
-    ...new Set(conversations.map((c) => (c.user_a === meId ? c.user_b : c.user_a))),
-  ];
   const convIds = conversations.map((c) => c.id);
 
-  const [{ data: profiles }, { data: msgs }] = await Promise.all([
-    supabase.from("profiles").select(PROFILE_COLS).in("id", otherIds),
-    supabase
-      .from("messages")
-      .select("*")
-      .in("conversation_id", convIds)
-      .order("created_at", { ascending: false }),
+  const [{ data: memberRows }, { data: msgs }] = await Promise.all([
+    supabase.from("conversation_members").select("conversation_id,user_id").in("conversation_id", convIds),
+    supabase.from("messages").select("*").in("conversation_id", convIds).order("created_at", { ascending: false }),
   ]);
 
+  const otherIdsByConv = new Map<string, string[]>();
+  const allOtherIds = new Set<string>();
+  for (const r of (memberRows ?? []) as { conversation_id: string; user_id: string }[]) {
+    if (r.user_id === meId) continue;
+    const arr = otherIdsByConv.get(r.conversation_id) ?? [];
+    arr.push(r.user_id);
+    otherIdsByConv.set(r.conversation_id, arr);
+    allOtherIds.add(r.user_id);
+  }
+
+  const { data: profiles } = await supabase.from("profiles").select(PROFILE_COLS).in("id", [...allOtherIds]);
   const pById = new Map((profiles ?? []).map((p) => [(p as Profile).id, p as Profile]));
+
   const allMsgs = (msgs ?? []) as Message[];
   const lastByConv = new Map<string, Message>();
   const unreadByConv = new Map<string, number>();
   for (const m of allMsgs) {
     if (!lastByConv.has(m.conversation_id)) lastByConv.set(m.conversation_id, m);
-    if (m.sender_id !== meId && m.read_at === null) {
+    if (m.sender_id !== meId && m.read_at === null)
       unreadByConv.set(m.conversation_id, (unreadByConv.get(m.conversation_id) ?? 0) + 1);
-    }
   }
 
   return conversations.map((c) => {
-    const otherId = c.user_a === meId ? c.user_b : c.user_a;
+    const others = (otherIdsByConv.get(c.id) ?? []).map((id) => pById.get(id)).filter(Boolean) as Profile[];
     return {
       id: c.id,
-      other: pById.get(otherId) ?? null,
+      other: c.is_group ? null : others[0] ?? null,
+      members: others,
+      isGroup: c.is_group,
+      title: c.title,
       last_message_at: c.last_message_at,
       lastMessage: lastByConv.get(c.id) ?? null,
       unread: unreadByConv.get(c.id) ?? 0,
@@ -393,6 +409,28 @@ export async function fetchConversations(meId: string): Promise<ConversationPrev
       iRequested: c.requested_by === meId,
     };
   });
+}
+
+/** Profils de tous les membres d'une conversation (incl. moi) — pour le fil de groupe. */
+export async function fetchConversationMembers(convId: string): Promise<Profile[]> {
+  const supabase = getSupabase();
+  const { data: rows } = await supabase
+    .from("conversation_members")
+    .select("user_id")
+    .eq("conversation_id", convId);
+  const ids = ((rows ?? []) as { user_id: string }[]).map((r) => r.user_id);
+  if (ids.length === 0) return [];
+  const { data: profiles } = await supabase.from("profiles").select(PROFILE_COLS).in("id", ids);
+  return (profiles ?? []) as Profile[];
+}
+
+export async function createGroupConversation(title: string, memberIds: string[]): Promise<string> {
+  const { data, error } = await getSupabase().rpc("create_group_conversation", {
+    group_title: title,
+    members: memberIds,
+  });
+  if (error) throw error;
+  return data as string;
 }
 
 export async function acceptConversation(convId: string): Promise<void> {

@@ -70,8 +70,11 @@ export type ConversationStatus = "pending" | "accepted";
 
 export interface Conversation {
   id: string;
-  user_a: string;
-  user_b: string;
+  user_a: string | null;
+  user_b: string | null;
+  is_group: boolean;
+  title: string | null;
+  created_by: string | null;
   status: ConversationStatus;
   requested_by: string | null;
   created_at: string;
@@ -97,6 +100,10 @@ export interface ConversationPreview {
   status: ConversationStatus;
   /** true si c'est MOI qui ai initié la demande */
   iRequested: boolean;
+  isGroup: boolean;
+  title: string | null;
+  /** membres (hors moi) — pour afficher avatars/nom d'un groupe */
+  members: Profile[];
 }
 
 export type NotificationType = "follow" | "like" | "comment" | "checkin_join";
