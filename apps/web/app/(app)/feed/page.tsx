@@ -58,6 +58,9 @@ export default function FeedPage() {
           Whoz<span className="text-gradient">in</span>
         </span>
         <div className="flex items-center gap-4">
+          <Link href="/dating" aria-label="Rencontres" className="text-xl leading-none">
+            💘
+          </Link>
           <Link href="/notifications" aria-label={t.notifications.title}>
             <svg viewBox="0 0 24 24" width="26" height="26" fill="none" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 21s-7-4.5-9.5-9A5 5 0 0 1 12 6a5 5 0 0 1 9.5 6c-2.5 4.5-9.5 9-9.5 9Z" />

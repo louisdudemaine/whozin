@@ -6,6 +6,8 @@ import type {
   Comment,
   Conversation,
   ConversationPreview,
+  DatingCandidate,
+  DatingProfile,
   Message,
   NearbyPlace,
   Post,
@@ -343,6 +345,39 @@ export async function updateProfile(
   const supabase = getSupabase();
   const { error } = await supabase.from("profiles").update(patch).eq("id", id);
   if (error) throw error;
+}
+
+// ----- Rencontres (dating) -----
+
+export async function fetchDatingProfile(meId: string): Promise<DatingProfile | null> {
+  const { data } = await getSupabase()
+    .from("dating_profiles")
+    .select("user_id,enabled,vibe")
+    .eq("user_id", meId)
+    .maybeSingle();
+  return (data as DatingProfile) ?? null;
+}
+
+export async function upsertDatingProfile(meId: string, enabled: boolean, vibe: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from("dating_profiles")
+    .upsert({ user_id: meId, enabled, vibe: vibe || null, updated_at: new Date().toISOString() });
+  if (error) throw error;
+}
+
+export async function fetchDatingCandidates(lim = 30): Promise<DatingCandidate[]> {
+  const { data, error } = await getSupabase().rpc("dating_candidates", { lim });
+  if (error) throw error;
+  return (data ?? []) as DatingCandidate[];
+}
+
+export async function datingLike(
+  target: string
+): Promise<{ matched: boolean; conversation_id: string | null }> {
+  const { data, error } = await getSupabase().rpc("dating_like", { target });
+  if (error) throw error;
+  const r = (data ?? {}) as { matched?: boolean; conversation_id?: string | null };
+  return { matched: !!r.matched, conversation_id: r.conversation_id ?? null };
 }
 
 // ----- Messagerie directe -----

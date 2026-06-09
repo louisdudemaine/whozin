@@ -106,6 +106,21 @@ export interface ConversationPreview {
   members: Profile[];
 }
 
+export interface DatingProfile {
+  user_id: string;
+  enabled: boolean;
+  vibe: string | null;
+}
+
+export interface DatingCandidate {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  vibe: string | null;
+}
+
 export type NotificationType = "follow" | "like" | "comment" | "checkin_join";
 
 export interface AppNotification {
