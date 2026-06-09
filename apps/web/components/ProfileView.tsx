@@ -9,9 +9,11 @@ import {
   fetchUserPosts,
   follow,
   unfollow,
+  updateLocationSharing,
   updateProfile,
   type ProfileStats,
 } from "@/lib/data";
+import type { LocationSharing } from "@whosin/shared";
 import { Avatar } from "./Avatar";
 import { PostModal } from "./PostModal";
 import { MessageButton } from "./MessageButton";
@@ -26,6 +28,7 @@ export function ProfileView({ profile }: { profile: Profile }) {
   const [editing, setEditing] = useState(false);
   const [displayName, setDisplayName] = useState(profile.display_name ?? "");
   const [bio, setBio] = useState(profile.bio ?? "");
+  const [sharing, setSharing] = useState<LocationSharing>(profile.location_sharing ?? "approx");
   const [busy, setBusy] = useState(false);
   const [openPost, setOpenPost] = useState<Post | null>(null);
 
@@ -54,6 +57,7 @@ export function ProfileView({ profile }: { profile: Profile }) {
     setBusy(true);
     try {
       await updateProfile(profile.id, { display_name: displayName, bio });
+      await updateLocationSharing(profile.id, sharing);
       await refreshProfile();
       setEditing(false);
     } finally {
@@ -176,6 +180,45 @@ export function ProfileView({ profile }: { profile: Profile }) {
               maxLength={280}
               className="mb-4 w-full resize-none rounded-xl border border-border bg-surface-2 px-3 py-3 outline-none focus:border-brand"
             />
+
+            <label className="mb-1 block text-xs text-text-dim">
+              {locale === "fr" ? "Ma position" : "My location"}
+            </label>
+            <div className="mb-1 grid grid-cols-3 gap-2">
+              {([
+                { v: "approx", emoji: "📍", label: locale === "fr" ? "Approx." : "Approx." },
+                { v: "precise", emoji: "🎯", label: locale === "fr" ? "Précise" : "Precise" },
+                { v: "hidden", emoji: "👻", label: locale === "fr" ? "Cachée" : "Hidden" },
+              ] as { v: LocationSharing; emoji: string; label: string }[]).map((o) => (
+                <button
+                  key={o.v}
+                  onClick={() => setSharing(o.v)}
+                  className="rounded-xl border py-2.5 text-sm font-semibold"
+                  style={{
+                    borderColor: sharing === o.v ? "var(--brand)" : "var(--border)",
+                    color: sharing === o.v ? "var(--brand)" : "var(--text-dim)",
+                    background: sharing === o.v ? "var(--surface-2)" : "transparent",
+                  }}
+                >
+                  <span className="mr-1">{o.emoji}</span>
+                  {o.label}
+                </button>
+              ))}
+            </div>
+            <p className="mb-4 text-xs text-text-dim">
+              {sharing === "hidden"
+                ? locale === "fr"
+                  ? "Mode fantôme : tu n'apparais nulle part. Tes check-ins restent privés."
+                  : "Ghost mode: you appear nowhere. Your check-ins stay private."
+                : sharing === "precise"
+                  ? locale === "fr"
+                    ? "Position précise au lieu où tu es."
+                    : "Precise location at your venue."
+                  : locale === "fr"
+                    ? "Tu apparais au lieu, sans GPS exact. Recommandé."
+                    : "You show at the venue, no exact GPS. Recommended."}
+            </p>
+
             <div className="flex gap-2">
               <button
                 onClick={() => setEditing(false)}

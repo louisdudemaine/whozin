@@ -7,6 +7,7 @@ import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
 import { fetchNearby } from "@/lib/data";
 import { CheckInSheet } from "@/components/CheckInSheet";
+import { LocationToggle } from "@/components/LocationToggle";
 
 const MapView = dynamic(() => import("@/components/MapView").then((m) => m.MapView), {
   ssr: false,
@@ -89,7 +90,7 @@ export default function MapPage() {
       />
 
       {/* header flottant */}
-      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 p-4 pt-[max(16px,env(safe-area-inset-top))]">
+      <div className="pointer-events-none absolute inset-x-0 top-0 z-30 flex items-start justify-between gap-2 p-4 pt-[max(16px,env(safe-area-inset-top))]">
         <div className="pointer-events-auto inline-flex items-center gap-2 rounded-full border border-border bg-surface/90 px-4 py-2 backdrop-blur-md">
           <span className="text-lg font-black">
             Whoz<span className="text-gradient">in</span>
@@ -100,6 +101,7 @@ export default function MapPage() {
             <b className="text-text">{places.length}</b> {t.map.activePlaces}
           </span>
         </div>
+        <LocationToggle />
       </div>
 
       {/* recentrer */}

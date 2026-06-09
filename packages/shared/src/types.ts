@@ -4,12 +4,15 @@ import type { CategoryKey } from "./categories";
 
 export type Visibility = "public" | "friends" | "private";
 
+export type LocationSharing = "precise" | "approx" | "hidden";
+
 export interface Profile {
   id: string;
   username: string;
   display_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  location_sharing?: LocationSharing;
   created_at: string;
 }
 

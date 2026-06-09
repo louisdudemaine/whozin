@@ -347,6 +347,17 @@ export async function updateProfile(
   if (error) throw error;
 }
 
+export async function updateLocationSharing(
+  meId: string,
+  value: "precise" | "approx" | "hidden"
+): Promise<void> {
+  const { error } = await getSupabase()
+    .from("profiles")
+    .update({ location_sharing: value })
+    .eq("id", meId);
+  if (error) throw error;
+}
+
 // ----- Rencontres (dating) -----
 
 export async function fetchDatingProfile(meId: string): Promise<DatingProfile | null> {
