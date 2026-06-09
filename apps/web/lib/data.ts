@@ -266,6 +266,36 @@ export async function unreadCount(): Promise<number> {
   return count ?? 0;
 }
 
+// ----- Recommandations -----
+
+export async function fetchSuggestedPeople(lim = 12): Promise<import("@whosin/shared").SuggestedPerson[]> {
+  const supabase = getSupabase();
+  const { data } = await supabase.rpc("suggested_people", { lim });
+  let rows = (data ?? []) as import("@whosin/shared").SuggestedPerson[];
+  if (rows.length === 0) {
+    const { data: pop } = await supabase.rpc("popular_people", { lim });
+    rows = (pop ?? []) as import("@whosin/shared").SuggestedPerson[];
+  }
+  return rows;
+}
+
+export async function fetchRecommendedPlaces(
+  lat: number,
+  lng: number,
+  lim = 12
+): Promise<import("@whosin/shared").RecommendedPlace[]> {
+  const { data, error } = await getSupabase().rpc("recommended_places", {
+    in_lat: lat,
+    in_lng: lng,
+    lim,
+  });
+  if (error) throw error;
+  return (data ?? []).map((p: Record<string, unknown>) => ({
+    ...(p as unknown as import("@whosin/shared").RecommendedPlace),
+    active_checkins: Number((p as { active_checkins: number }).active_checkins ?? 0),
+  }));
+}
+
 // ----- Profils & social -----
 
 export async function fetchProfileByUsername(username: string): Promise<Profile | null> {

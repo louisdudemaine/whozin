@@ -5,6 +5,7 @@ import type { Post } from "@whosin/shared";
 import { useT } from "@/lib/locale";
 import { fetchExplore } from "@/lib/data";
 import { PostModal } from "@/components/PostModal";
+import { SuggestedPeople } from "@/components/SuggestedPeople";
 
 export default function ExplorePage() {
   const { t } = useT();
@@ -24,6 +25,8 @@ export default function ExplorePage() {
       <header className="sticky top-0 z-20 border-b border-border bg-background/90 px-4 py-3 backdrop-blur-md pt-[max(12px,env(safe-area-inset-top))]">
         <h1 className="text-xl font-black">Explorer</h1>
       </header>
+
+      <SuggestedPeople />
 
       {loading ? (
         <p className="py-16 text-center text-sm text-text-dim">{t.common.loading}</p>

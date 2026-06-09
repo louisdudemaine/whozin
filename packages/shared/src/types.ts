@@ -124,6 +124,23 @@ export interface DatingCandidate {
   vibe: string | null;
 }
 
+export type SuggestReason = "co_likes" | "shared_taste" | "fof" | "popular";
+
+export interface SuggestedPerson {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bio: string | null;
+  reason: SuggestReason;
+  shared: number;
+}
+
+export interface RecommendedPlace extends NearbyPlace {
+  reason: "taste" | "popular" | "nearby";
+  score: number;
+}
+
 export type NotificationType = "follow" | "like" | "comment" | "checkin_join";
 
 export interface AppNotification {
