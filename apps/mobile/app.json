@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Whozin",
+    "slug": "whos-in",
+    "scheme": "whosin",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "dark",
+    "newArchEnabled": true,
+    "splash": {
+      "backgroundColor": "#0a0a0f"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.whosin.app",
+      "infoPlist": {
+        "NSLocationWhenInUseUsageDescription": "Who's In utilise ta position pour te montrer ce qui se passe autour de toi."
+      }
+    },
+    "android": {
+      "package": "com.whosin.app",
+      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Who's In utilise ta position pour te montrer ce qui se passe autour de toi."
+        }
+      ]
+    ],
+    "extra": {
+      "supabaseUrl": "https://aovuweoehzflydjtxpdr.supabase.co",
+      "supabaseAnonKey": "sb_publishable_GpCxwDNKS1tJhuwbA2IvHw_zLLaMj0h"
+    }
+  }
+}

@@ -1,0 +1,120 @@
+@import "tailwindcss";
+
+:root {
+  --background: #0a0a0f;
+  --surface: #14141c;
+  --surface-2: #1d1d28;
+  --border: #2a2a38;
+  --text: #f4f4f6;
+  --text-dim: #9b9bac;
+  --brand: #ff2e63;
+  --brand-2: #ff7849;
+  --accent: #16d9c5;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-text: var(--text);
+  --color-text-dim: var(--text-dim);
+  --color-brand: var(--brand);
+  --color-brand-2: var(--brand-2);
+  --color-accent: var(--accent);
+  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+  background: var(--background);
+  color: var(--text);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  overscroll-behavior: none;
+}
+
+/* App canvas : largeur téléphone, centré sur grand écran */
+.app-shell {
+  max-width: 480px;
+  margin: 0 auto;
+  min-height: 100dvh;
+  position: relative;
+  background: var(--background);
+}
+
+.brand-gradient {
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+}
+.text-gradient {
+  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* scrollbars discrètes */
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* MapLibre : marqueurs custom */
+.wi-marker {
+  cursor: pointer;
+  transform: translateZ(0);
+}
+.wi-pulse {
+  animation: wi-pulse 2s ease-out infinite;
+}
+@keyframes wi-pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 46, 99, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 16px rgba(255, 46, 99, 0);
+  }
+}
+.maplibregl-popup-content {
+  background: var(--surface-2);
+  color: var(--text);
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  padding: 10px 12px;
+}
+.maplibregl-popup-tip {
+  border-top-color: var(--surface-2) !important;
+}
+.maplibregl-ctrl-attrib {
+  font-size: 9px;
+  opacity: 0.5;
+}
+
+@keyframes wi-slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+.animate-slide-up {
+  animation: wi-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@keyframes wi-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.animate-fade {
+  animation: wi-fade 0.2s ease-out;
+}
