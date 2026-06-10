@@ -20,6 +20,8 @@ import {
   uploadMedia,
 } from "@/lib/data";
 import { Avatar } from "@/components/Avatar";
+import { PollCard, PollComposer } from "@/components/Poll";
+import { createSquadInvite } from "@/lib/data";
 
 export default function ThreadPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
@@ -37,6 +39,8 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
   const [pending, setPending] = useState(false);
   const [iAmRecipient, setIAmRecipient] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [pollOpen, setPollOpen] = useState(false);
+  const [inviteLink, setInviteLink] = useState<string | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -160,9 +164,20 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/90 px-4 py-2.5 backdrop-blur-md pt-[max(10px,env(safe-area-inset-top))]">
         <Link href="/messages" className="text-text-dim">←</Link>
         {isGroup ? (
-          <div className="flex items-center gap-2.5">
+          <div className="flex min-w-0 flex-1 items-center gap-2.5">
             <span className="brand-gradient flex h-9 w-9 items-center justify-center rounded-full text-lg">👥</span>
-            <span className="font-semibold">{groupTitle}</span>
+            <span className="truncate font-semibold">{groupTitle}</span>
+            <button
+              onClick={async () => {
+                if (!meId) return;
+                const code = await createSquadInvite(id, meId);
+                setInviteLink(`${window.location.origin}/join/${code}`);
+              }}
+              aria-label="Inviter la gang"
+              className="glass pressable ml-auto flex h-9 w-9 items-center justify-center rounded-full text-base"
+            >
+              🔗
+            </button>
           </div>
         ) : (
           <Link href={`/u/${other?.username ?? ""}`} className="flex min-w-0 flex-1 items-center gap-2.5">
@@ -215,7 +230,9 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
                         {sender?.display_name || sender?.username}
                       </span>
                     )}
-                    {m.image_url ? (
+                    {m.poll_id ? (
+                      <PollCard pollId={m.poll_id} />
+                    ) : m.image_url ? (
                       <span className="overflow-hidden rounded-2xl">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={m.image_url} alt="" className="w-full object-cover" />
@@ -293,6 +310,15 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
             >
               {uploading ? "…" : "📷"}
             </button>
+            {isGroup && (
+              <button
+                onClick={() => setPollOpen(true)}
+                aria-label="Sondage"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-border text-lg"
+              >
+                📊
+              </button>
+            )}
             <input
               value={text}
               onChange={(e) => setText(e.target.value)}
@@ -310,6 +336,48 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <path d="M22 2 11 13" /><path d="M22 2 15 22l-4-9-9-4Z" />
               </svg>
+            </button>
+          </div>
+        </div>
+      )}
+
+      {pollOpen && (
+        <PollComposer convId={id} onClose={() => setPollOpen(false)} onCreated={() => setPollOpen(false)} />
+      )}
+
+      {inviteLink && (
+        <div className="fixed inset-0 z-[85] flex items-end justify-center">
+          <div className="absolute inset-0 bg-black/60 animate-fade" onClick={() => setInviteLink(null)} />
+          <div className="relative w-full max-w-[480px] rounded-t-3xl border-t border-border bg-surface p-5 pb-[max(20px,env(safe-area-inset-bottom))] text-center animate-slide-up">
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
+            <h2 className="font-display text-lg font-bold">🔗 {locale === "fr" ? "Invite ta gang" : "Invite your squad"}</h2>
+            <p className="mt-1 text-xs text-text-dim">
+              {locale === "fr"
+                ? "Ce lien les ajoute au groupe et vous connecte."
+                : "This link adds them to the group and connects you."}
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&bgcolor=10101b&color=f4f2f8&data=${encodeURIComponent(inviteLink)}`}
+              alt="QR"
+              className="mx-auto mt-4 rounded-xl border border-border"
+              width={160}
+              height={160}
+            />
+            <p className="mt-3 break-all rounded-xl bg-surface-2 px-3 py-2 text-xs text-text-dim">{inviteLink}</p>
+            <button
+              onClick={async () => {
+                try {
+                  if (navigator.share) await navigator.share({ url: inviteLink });
+                  else await navigator.clipboard.writeText(inviteLink);
+                } catch {
+                  /* annulé */
+                }
+                setInviteLink(null);
+              }}
+              className="glow-cta brand-gradient pressable mt-4 w-full rounded-full py-3.5 font-display text-sm font-bold text-white"
+            >
+              {locale === "fr" ? "Partager le lien" : "Share link"}
             </button>
           </div>
         </div>

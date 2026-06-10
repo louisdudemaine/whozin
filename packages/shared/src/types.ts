@@ -90,8 +90,29 @@ export interface Message {
   sender_id: string;
   body: string | null;
   image_url: string | null;
+  poll_id?: string | null;
   created_at: string;
   read_at: string | null;
+}
+
+export interface PollOption {
+  id: string;
+  poll_id: string;
+  place_id: string | null;
+  label: string;
+  position: number;
+  votes: number;
+  myVote: boolean;
+  place?: Place | null;
+}
+
+export interface PollData {
+  id: string;
+  conversation_id: string;
+  creator_id: string;
+  question: string;
+  options: PollOption[];
+  totalVotes: number;
 }
 
 export interface ConversationPreview {

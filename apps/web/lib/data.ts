@@ -388,6 +388,79 @@ export async function updateLocationSharing(
   if (error) throw error;
 }
 
+// ----- Sondages « On va où? » -----
+
+export async function createPoll(
+  convId: string,
+  meId: string,
+  question: string,
+  options: { placeId: string | null; label: string }[]
+): Promise<string> {
+  const supabase = getSupabase();
+  const { data: poll, error } = await supabase
+    .from("polls")
+    .insert({ conversation_id: convId, creator_id: meId, question })
+    .select("id")
+    .single();
+  if (error) throw error;
+  const pollId = (poll as { id: string }).id;
+  const { error: e2 } = await supabase.from("poll_options").insert(
+    options.map((o, i) => ({ poll_id: pollId, place_id: o.placeId, label: o.label, position: i }))
+  );
+  if (e2) throw e2;
+  const { error: e3 } = await supabase
+    .from("messages")
+    .insert({ conversation_id: convId, sender_id: meId, body: null, poll_id: pollId });
+  if (e3) throw e3;
+  return pollId;
+}
+
+export async function fetchPoll(pollId: string, meId: string): Promise<import("@whosin/shared").PollData | null> {
+  const supabase = getSupabase();
+  const [{ data: poll }, { data: opts }, { data: votes }] = await Promise.all([
+    supabase.from("polls").select("*").eq("id", pollId).maybeSingle(),
+    supabase.from("poll_options").select("*, place:places(*)").eq("poll_id", pollId).order("position"),
+    supabase.from("poll_votes").select("option_id,user_id").eq("poll_id", pollId),
+  ]);
+  if (!poll) return null;
+  const voteRows = (votes ?? []) as { option_id: string; user_id: string }[];
+  const options = ((opts ?? []) as Record<string, unknown>[]).map((o) => ({
+    ...(o as unknown as import("@whosin/shared").PollOption),
+    votes: voteRows.filter((v) => v.option_id === (o as { id: string }).id).length,
+    myVote: voteRows.some((v) => v.option_id === (o as { id: string }).id && v.user_id === meId),
+  }));
+  return {
+    ...(poll as Omit<import("@whosin/shared").PollData, "options" | "totalVotes">),
+    options,
+    totalVotes: voteRows.length,
+  };
+}
+
+export async function votePoll(pollId: string, optionId: string, meId: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from("poll_votes")
+    .upsert({ poll_id: pollId, option_id: optionId, user_id: meId }, { onConflict: "poll_id,user_id" });
+  if (error) throw error;
+}
+
+// ----- Squads (invitations) -----
+
+export async function createSquadInvite(convId: string, meId: string): Promise<string> {
+  const { data, error } = await getSupabase()
+    .from("squad_invites")
+    .insert({ conversation_id: convId, inviter_id: meId })
+    .select("code")
+    .single();
+  if (error) throw error;
+  return (data as { code: string }).code;
+}
+
+export async function joinSquad(code: string): Promise<{ conversation_id: string; title: string }> {
+  const { data, error } = await getSupabase().rpc("join_squad", { invite_code: code });
+  if (error) throw error;
+  return data as { conversation_id: string; title: string };
+}
+
 // ----- Stories 24h -----
 
 /** Stories actives groupées par auteur (moi en premier, puis non-vues, puis vues). */
