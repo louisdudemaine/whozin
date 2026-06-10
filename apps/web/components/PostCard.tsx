@@ -33,7 +33,7 @@ export function PostCard({ post }: { post: Post }) {
   }
 
   return (
-    <article className="mb-1">
+    <article className="mb-3 overflow-hidden rounded-2xl border border-border bg-surface">
       {/* header */}
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <Link href={`/u/${post.author?.username ?? ""}`}>
@@ -50,34 +50,42 @@ export function PostCard({ post }: { post: Post }) {
           <Link href={`/u/${post.author?.username ?? ""}`} className="block truncate text-sm font-semibold">
             {post.author?.display_name || post.author?.username}
           </Link>
-          {post.place && cat && (
-            <span className="block truncate text-xs" style={{ color: cat.color }}>
-              {cat.emoji} {post.place.name}
-            </span>
-          )}
+          <span className="block truncate text-xs text-text-dim">{timeAgo(post.created_at, locale)}</span>
         </div>
-        <span className="text-xs text-text-dim">{timeAgo(post.created_at, locale)}</span>
       </div>
 
-      {/* média */}
+      {/* média — ratio 4:3, pastille lieu PAR-DESSUS la photo (signature Whozin) */}
       {post.photo_url ? (
         <button
           onDoubleClick={() => !liked && onLike()}
-          className="block w-full"
+          className="relative block w-full"
           aria-label="post image"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={post.photo_url}
             alt={post.body ?? ""}
-            className="aspect-square w-full bg-surface-2 object-cover"
+            className="aspect-[4/3] w-full bg-surface-2 object-cover"
             loading="lazy"
           />
+          {post.place && cat && (
+            <span
+              className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md"
+              style={{ background: cat.color + "cc" }}
+            >
+              {cat.emoji} {post.place.name}
+            </span>
+          )}
         </button>
       ) : (
         post.body && (
-          <div className="brand-gradient flex aspect-square w-full items-center justify-center p-8">
+          <div className="brand-gradient relative flex aspect-[4/3] w-full items-center justify-center p-8">
             <p className="text-center text-2xl font-black leading-snug text-white">{post.body}</p>
+            {post.place && cat && (
+              <span className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full bg-black/40 px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md">
+                {cat.emoji} {post.place.name}
+              </span>
+            )}
           </div>
         )
       )}
@@ -123,9 +131,7 @@ export function PostCard({ post }: { post: Post }) {
         </button>
       )}
 
-      <div className="px-3 pb-3 pt-1 text-[11px] uppercase tracking-wide text-text-dim">
-        {timeAgo(post.created_at, locale)}
-      </div>
+      <div className="pb-3" />
 
       {commentsOpen && (
         <CommentsSheet
