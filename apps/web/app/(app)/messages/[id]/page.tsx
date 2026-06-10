@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Message, Profile } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
+import { useCall } from "@/lib/calls";
 import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
 import {
@@ -23,6 +24,7 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
   const { id } = use(params);
   const router = useRouter();
   const { profile } = useAuth();
+  const { startCall, state: callState } = useCall();
   const { t, locale } = useT();
   const [messages, setMessages] = useState<Message[]>([]);
   const [other, setOther] = useState<Profile | null>(null);
@@ -143,10 +145,33 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
             <span className="font-semibold">{groupTitle}</span>
           </div>
         ) : (
-          <Link href={`/u/${other?.username ?? ""}`} className="flex items-center gap-2.5">
+          <Link href={`/u/${other?.username ?? ""}`} className="flex min-w-0 flex-1 items-center gap-2.5">
             <Avatar profile={other} size={34} />
-            <span className="font-semibold">{other?.display_name || other?.username || ""}</span>
+            <span className="truncate font-semibold">{other?.display_name || other?.username || ""}</span>
           </Link>
+        )}
+        {!isGroup && other && !pending && (
+          <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => callState === "idle" && startCall(other, "audio", id)}
+              aria-label="Appel audio"
+              className="glass pressable flex h-9 w-9 items-center justify-center rounded-full"
+            >
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.6 2Z" />
+              </svg>
+            </button>
+            <button
+              onClick={() => callState === "idle" && startCall(other, "video", id)}
+              aria-label="Appel vidéo"
+              className="glass pressable flex h-9 w-9 items-center justify-center rounded-full"
+            >
+              <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="var(--text)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M15 10.5 21 7v10l-6-3.5" />
+                <rect x="2" y="6" width="13" height="12" rx="2" />
+              </svg>
+            </button>
+          </div>
         )}
       </header>
 

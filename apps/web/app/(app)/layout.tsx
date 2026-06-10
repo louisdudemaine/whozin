@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
+import { CallProvider } from "@/lib/calls";
+import { CallOverlay } from "@/components/CallOverlay";
 import { getSupabase } from "@/lib/supabase";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthScreen } from "@/components/AuthScreen";
@@ -59,7 +61,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (!session) return <AuthScreen />;
 
   return (
-    <>
+    <CallProvider>
       <div className={isThread ? "min-h-[100dvh]" : "min-h-[100dvh] pb-28"}>{children}</div>
 
       {!isThread && <BottomNav unread={unread} />}
@@ -69,6 +71,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         onClose={() => setCreateOpen(false)}
         onCreated={() => window.dispatchEvent(new CustomEvent("wi:refresh"))}
       />
-    </>
+      <CallOverlay />
+    </CallProvider>
   );
 }
