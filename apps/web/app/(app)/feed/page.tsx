@@ -107,6 +107,17 @@ export default function FeedPage() {
       ) : (
         <>
           <LiveNow checkIns={stories} onSelectPlace={setSelected} />
+
+          <Link
+            href="/events"
+            className="mx-3 mt-3 flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3"
+          >
+            <span className="flex items-center gap-2 text-sm font-bold">
+              🎟️ {locale === "fr" ? "Shows & événements près de toi" : "Shows & events near you"}
+            </span>
+            <span className="text-text-dim">→</span>
+          </Link>
+
           <div className="px-3 pt-3">
             {posts.length === 0 ? (
               <p className="py-16 text-center text-sm text-text-dim">{t.feed.empty}</p>
