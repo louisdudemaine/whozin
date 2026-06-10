@@ -8,6 +8,7 @@ import { useT } from "@/lib/locale";
 import { toggleLike } from "@/lib/data";
 import { Avatar } from "./Avatar";
 import { CommentsSheet } from "./CommentsSheet";
+import { SafetyMenu } from "./SafetyMenu";
 
 export function PostCard({ post }: { post: Post }) {
   const { t, locale } = useT();
@@ -53,6 +54,7 @@ export function PostCard({ post }: { post: Post }) {
           </Link>
           <span className="block truncate text-xs text-text-dim">{timeAgo(post.created_at, locale)}</span>
         </div>
+        <SafetyMenu targetType="post" targetId={post.id} targetUserId={post.user_id} />
       </div>
 
       {/* média — ratio 4:3, pastille lieu PAR-DESSUS la photo (signature Whozin) */}

@@ -16,6 +16,8 @@ import {
 import type { LocationSharing } from "@whosin/shared";
 import { Avatar } from "./Avatar";
 import { PostModal } from "./PostModal";
+import { SafetyMenu } from "./SafetyMenu";
+import { iBlocked } from "@/lib/data";
 import { MessageButton } from "./MessageButton";
 
 export function ProfileView({ profile }: { profile: Profile }) {
@@ -31,11 +33,13 @@ export function ProfileView({ profile }: { profile: Profile }) {
   const [sharing, setSharing] = useState<LocationSharing>(profile.location_sharing ?? "approx");
   const [busy, setBusy] = useState(false);
   const [openPost, setOpenPost] = useState<Post | null>(null);
+  const [blocked, setBlocked] = useState(false);
 
   useEffect(() => {
     fetchProfileStats(profile.id, me?.id ?? null).then(setStats).catch(() => {});
     fetchUserPosts(profile.id).then(setPosts).catch(() => {});
-  }, [profile.id, me?.id]);
+    if (me && me.id !== profile.id) iBlocked(me.id, profile.id).then(setBlocked).catch(() => {});
+  }, [profile.id, me?.id, me]);
 
   async function toggleFollow() {
     if (!me || !stats) return;
@@ -81,6 +85,15 @@ export function ProfileView({ profile }: { profile: Profile }) {
               {t.auth.signOut}
             </button>
           )}
+          {!isMe && (
+            <SafetyMenu
+              targetType="profile"
+              targetId={profile.id}
+              targetUserId={profile.id}
+              blocked={blocked}
+              onBlockChange={setBlocked}
+            />
+          )}
         </div>
       </header>
 
@@ -107,6 +120,11 @@ export function ProfileView({ profile }: { profile: Profile }) {
             {t.profile.editProfile}
           </button>
         ) : (
+          me && blocked ? (
+            <p className="mt-4 rounded-2xl border border-border px-4 py-3 text-center text-sm text-text-dim">
+              {locale === "fr" ? "Tu as bloqué ce compte (⋯ pour débloquer)" : "You blocked this account (⋯ to unblock)"}
+            </p>
+          ) : (
           me && (
             <div className="mt-4 flex gap-2">
               <button
@@ -124,7 +142,7 @@ export function ProfileView({ profile }: { profile: Profile }) {
               </div>
             </div>
           )
-        )}
+        ))}
       </div>
 
       <div className="flex items-center justify-center gap-2 border-t border-border py-2.5 text-xs font-semibold uppercase tracking-wide text-text">

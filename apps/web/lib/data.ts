@@ -388,6 +388,49 @@ export async function updateLocationSharing(
   if (error) throw error;
 }
 
+// ----- Blocage & signalement -----
+
+export async function blockUser(meId: string, targetId: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from("blocks")
+    .insert({ blocker_id: meId, blocked_id: targetId });
+  if (error && !`${error.code}`.startsWith("23")) throw error; // doublon = ok
+}
+
+export async function unblockUser(meId: string, targetId: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from("blocks")
+    .delete()
+    .eq("blocker_id", meId)
+    .eq("blocked_id", targetId);
+  if (error) throw error;
+}
+
+/** true si MOI j'ai bloqué cette personne. */
+export async function iBlocked(meId: string, targetId: string): Promise<boolean> {
+  const { count } = await getSupabase()
+    .from("blocks")
+    .select("blocked_id", { count: "exact", head: true })
+    .eq("blocker_id", meId)
+    .eq("blocked_id", targetId);
+  return (count ?? 0) > 0;
+}
+
+export async function reportTarget(
+  reporterId: string,
+  targetType: "profile" | "post" | "message" | "story",
+  targetId: string,
+  reason: string
+): Promise<void> {
+  const { error } = await getSupabase().from("reports").insert({
+    reporter_id: reporterId,
+    target_type: targetType,
+    target_id: targetId,
+    reason,
+  });
+  if (error) throw error;
+}
+
 // ----- Rencontres (dating) -----
 
 export async function fetchDatingProfile(meId: string): Promise<DatingProfile | null> {
