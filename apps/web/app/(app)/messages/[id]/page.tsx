@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Message, Profile } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useCall } from "@/lib/calls";
+import { pushNotify } from "@/lib/push";
 import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
 import {
@@ -109,6 +110,25 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     setText("");
     try {
       await sendMessage(id, meId, body);
+      // push aux destinataires (hors moi) — jamais bloquant
+      const me = profile?.display_name || profile?.username || "Whozin";
+      const recipients = isGroup
+        ? [...membersById.keys()].filter((uid) => uid !== meId)
+        : other
+          ? [other.id]
+          : [];
+      for (const uid of recipients) {
+        pushNotify(
+          uid,
+          {
+            title: isGroup ? `${me} · ${groupTitle}` : me,
+            body,
+            url: `/messages/${id}`,
+            tag: `msg-${id}`,
+          },
+          id
+        );
+      }
     } catch {
       setText(body);
     }

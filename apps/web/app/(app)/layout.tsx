@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { CallProvider } from "@/lib/calls";
 import { CallOverlay } from "@/components/CallOverlay";
+import { PushBanner } from "@/components/PushBanner";
 import { getSupabase } from "@/lib/supabase";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthScreen } from "@/components/AuthScreen";
@@ -72,6 +73,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         onCreated={() => window.dispatchEvent(new CustomEvent("wi:refresh"))}
       />
       <CallOverlay />
+      <PushBanner />
     </CallProvider>
   );
 }

@@ -26,6 +26,7 @@ import type { Profile } from "@whosin/shared";
 import { getSupabase } from "./supabase";
 import { useAuth } from "./auth";
 import { sendMessage } from "./data";
+import { pushNotify } from "./push";
 
 export type CallKind = "audio" | "video";
 export type CallState = "idle" | "incoming" | "outgoing" | "connecting" | "active";
@@ -285,6 +286,18 @@ export function CallProvider({ children }: { children: ReactNode }) {
           setTimeout(() => supabase.removeChannel(ring), 1500);
         }
       });
+
+      // notif push (sonne même si l'app est fermée -> ouvre la conversation)
+      pushNotify(
+        other.id,
+        {
+          title: profile.display_name || profile.username,
+          body: kind === "video" ? "📹 Appel vidéo entrant…" : "📞 Appel entrant…",
+          url: conversationId ? `/messages/${conversationId}` : "/messages",
+          tag: `call-${callId}`,
+        },
+        conversationId
+      );
 
       // pas de réponse en 30 s -> raccroche (appel manqué)
       ringTimer.current = setTimeout(() => {
