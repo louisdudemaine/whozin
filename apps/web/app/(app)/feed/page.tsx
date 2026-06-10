@@ -10,6 +10,7 @@ import { fetchActiveCheckIns, fetchFeed, unreadMessagesCount } from "@/lib/data"
 import { PostCard } from "@/components/PostCard";
 import { LiveNow } from "@/components/LiveNow";
 import { CheckInSheet } from "@/components/CheckInSheet";
+import { StoriesBar } from "@/components/Stories";
 
 export default function FeedPage() {
   const { t, locale } = useT();
@@ -110,6 +111,7 @@ export default function FeedPage() {
         <p className="py-16 text-center text-sm text-text-dim">{t.common.loading}</p>
       ) : (
         <>
+          <StoriesBar />
           <LiveNow checkIns={stories} onSelectPlace={setSelected} />
 
           <Link

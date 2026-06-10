@@ -124,6 +124,25 @@ export interface DatingCandidate {
   vibe: string | null;
 }
 
+export interface Story {
+  id: string;
+  user_id: string;
+  place_id: string | null;
+  media_url: string;
+  caption: string | null;
+  created_at: string;
+  expires_at: string;
+  author?: Profile;
+  place?: Place | null;
+  viewed?: boolean;
+}
+
+export interface UserStories {
+  author: Profile;
+  stories: Story[];
+  allViewed: boolean;
+}
+
 export type SuggestReason = "co_likes" | "shared_taste" | "fof" | "popular";
 
 export interface SuggestedPerson {

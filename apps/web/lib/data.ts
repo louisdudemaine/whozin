@@ -388,6 +388,73 @@ export async function updateLocationSharing(
   if (error) throw error;
 }
 
+// ----- Stories 24h -----
+
+/** Stories actives groupées par auteur (moi en premier, puis non-vues, puis vues). */
+export async function fetchStories(meId: string): Promise<import("@whosin/shared").UserStories[]> {
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from("stories")
+    .select(`*, author:profiles!stories_user_id_fkey(${PROFILE_COLS}), place:places(*)`)
+    .gt("expires_at", new Date().toISOString())
+    .order("created_at", { ascending: true });
+  if (error) throw error;
+  const stories = (data as unknown as import("@whosin/shared").Story[]) ?? [];
+  if (stories.length === 0) return [];
+
+  const { data: views } = await supabase
+    .from("story_views")
+    .select("story_id")
+    .eq("viewer_id", meId)
+    .in("story_id", stories.map((s) => s.id));
+  const seen = new Set(((views ?? []) as { story_id: string }[]).map((v) => v.story_id));
+
+  const byUser = new Map<string, import("@whosin/shared").UserStories>();
+  for (const s of stories) {
+    if (!s.author) continue;
+    s.viewed = seen.has(s.id) || s.user_id === meId;
+    const g = byUser.get(s.user_id) ?? { author: s.author, stories: [], allViewed: true };
+    g.stories.push(s);
+    if (!s.viewed) g.allViewed = false;
+    byUser.set(s.user_id, g);
+  }
+  return [...byUser.values()].sort((a, b) => {
+    if (a.author.id === meId) return -1;
+    if (b.author.id === meId) return 1;
+    if (a.allViewed !== b.allViewed) return a.allViewed ? 1 : -1;
+    return 0;
+  });
+}
+
+export async function markStoryViewed(storyId: string, meId: string): Promise<void> {
+  await getSupabase()
+    .from("story_views")
+    .upsert({ story_id: storyId, viewer_id: meId }, { ignoreDuplicates: true });
+}
+
+export async function publishStory(
+  meId: string,
+  mediaUrl: string,
+  caption: string | null,
+  placeId: string | null
+): Promise<void> {
+  const { error } = await getSupabase().from("stories").insert({
+    user_id: meId,
+    media_url: mediaUrl,
+    caption: caption || null,
+    place_id: placeId,
+  });
+  if (error) throw error;
+}
+
+export async function storyViewerCount(storyId: string): Promise<number> {
+  const { count } = await getSupabase()
+    .from("story_views")
+    .select("viewer_id", { count: "exact", head: true })
+    .eq("story_id", storyId);
+  return count ?? 0;
+}
+
 // ----- Blocage & signalement -----
 
 export async function blockUser(meId: string, targetId: string): Promise<void> {
