@@ -33,17 +33,18 @@ export function PostCard({ post }: { post: Post }) {
   }
 
   return (
-    <article className="mb-3 overflow-hidden rounded-2xl border border-border bg-surface">
+    <article
+      className="animate-glow-enter mb-4 overflow-hidden rounded-3xl border border-border"
+      style={{
+        background: "linear-gradient(160deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01)), var(--surface)",
+        boxShadow: "0 8px 32px rgba(0,0,0,0.45), inset 0 1px 0 rgba(255,255,255,0.06)",
+      }}
+    >
       {/* header */}
       <div className="flex items-center gap-2.5 px-3 py-2.5">
         <Link href={`/u/${post.author?.username ?? ""}`}>
-          <span
-            className="block rounded-full p-[2px]"
-            style={{ background: cat ? `linear-gradient(135deg, ${cat.color}, var(--brand-2))` : "var(--border)" }}
-          >
-            <span className="block rounded-full border-2 border-background">
-              <Avatar profile={post.author} size={34} />
-            </span>
+          <span className="ring ring--static">
+            <Avatar profile={post.author} size={34} />
           </span>
         </Link>
         <div className="min-w-0 flex-1 leading-tight">

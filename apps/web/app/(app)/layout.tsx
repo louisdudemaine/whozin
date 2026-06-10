@@ -60,7 +60,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <>
-      <div className={isThread ? "min-h-[100dvh]" : "min-h-[100dvh] pb-16"}>{children}</div>
+      <div className={isThread ? "min-h-[100dvh]" : "min-h-[100dvh] pb-28"}>{children}</div>
 
       {!isThread && <BottomNav unread={unread} />}
 

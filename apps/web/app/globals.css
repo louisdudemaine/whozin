@@ -1,15 +1,25 @@
 @import "tailwindcss";
 
+/* ════════════════════════════════════════════════════════════════
+   WHOZIN — « AFTERGLOW » Néon Noir Montréal
+   La lumière est la donnée : ce qui brille est vivant, maintenant.
+   ════════════════════════════════════════════════════════════════ */
+
 :root {
-  --background: #0a0a0f;
-  --surface: #14141c;
-  --surface-2: #1d1d28;
-  --border: #2a2a38;
-  --text: #f4f4f6;
-  --text-dim: #9b9bac;
+  --background: #07070d;
+  --surface: #10101b;
+  --surface-2: #181826;
+  --border: rgba(255, 255, 255, 0.08);
+  --text: #f4f2f8;
+  --text-dim: #8b8b9e;
   --brand: #ff2e63;
   --brand-2: #ff7849;
   --accent: #16d9c5;
+  --violet: #8b5cf6;
+  --gold: #ffc94d;
+  --glow-rose: rgba(255, 46, 99, 0.45);
+  --glow-teal: rgba(22, 217, 197, 0.4);
+  --scrim: linear-gradient(180deg, rgba(7, 7, 13, 0) 40%, rgba(7, 7, 13, 0.92) 100%);
 }
 
 @theme inline {
@@ -22,7 +32,17 @@
   --color-brand: var(--brand);
   --color-brand-2: var(--brand-2);
   --color-accent: var(--accent);
-  --font-sans: var(--font-geist), ui-sans-serif, system-ui, sans-serif;
+  --color-violet: var(--violet);
+  --color-gold: var(--gold);
+  --font-sans: var(--font-body), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-disp), var(--font-body), sans-serif;
+}
+
+/* l'angle des anneaux électriques (rotation du conic-gradient) */
+@property --a {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
 }
 
 * {
@@ -35,51 +55,205 @@ body {
   padding: 0;
   background: var(--background);
   color: var(--text);
-  font-family: var(--font-sans);
+  font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   overscroll-behavior: none;
 }
 
-/* App canvas : largeur téléphone, centré sur grand écran */
 .app-shell {
   max-width: 480px;
   margin: 0 auto;
   min-height: 100dvh;
   position: relative;
-  background: var(--background);
 }
 
+/* ── Pluie de Néons : lueurs hors-champ reflétées sur l'asphalte ── */
+.neon-rain {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(42% 30% at 12% -4%, rgba(255, 46, 99, 0.16), transparent 70%),
+    radial-gradient(36% 26% at 100% 28%, rgba(139, 92, 246, 0.13), transparent 70%),
+    radial-gradient(50% 34% at 78% 104%, rgba(22, 217, 197, 0.12), transparent 70%);
+  filter: blur(48px);
+  transform: translateZ(0);
+}
+.neon-rain--intense {
+  background:
+    radial-gradient(46% 34% at 12% -4%, rgba(255, 46, 99, 0.35), transparent 70%),
+    radial-gradient(40% 30% at 100% 28%, rgba(139, 92, 246, 0.3), transparent 70%),
+    radial-gradient(54% 38% at 78% 104%, rgba(22, 217, 197, 0.28), transparent 70%);
+  animation: city-drift 24s ease-in-out infinite;
+}
+
+/* ── Grain argentique (greffe Aurora) : soude les lueurs au noir ── */
+.grain {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  pointer-events: none;
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 160px;
+}
+
+/* ── Verre Fumé : surface flottante à arête lumineuse ── */
+.glass {
+  background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  backdrop-filter: blur(20px) saturate(140%);
+  -webkit-backdrop-filter: blur(20px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-top-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+@supports not (backdrop-filter: blur(1px)) {
+  .glass {
+    background: rgba(16, 16, 27, 0.92);
+  }
+}
+
+/* carte solide (pas de blur = pas de coût) qui porte un halo sémantique :
+   --glow (couleur catégorie) et --int (0→1 affluence) posés inline */
+.halo-card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 calc(12px + 28px * var(--int, 0.4)) calc(-8px + 4px * var(--int, 0.4)) var(--glow, var(--glow-rose)),
+    0 0 calc(40px + 60px * var(--int, 0.4)) -16px var(--glow, var(--glow-rose));
+}
+.halo-card::before {
+  content: "";
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(60% 50% at 50% 100%, var(--glow, var(--glow-rose)), transparent 70%);
+  opacity: calc(0.18 + 0.35 * var(--int, 0.4));
+  filter: blur(24px);
+  pointer-events: none;
+  z-index: 0;
+}
+.halo-card > * {
+  position: relative;
+  z-index: 1;
+}
+.halo-breathe {
+  animation: neon-breathe 3.2s ease-in-out infinite;
+}
+
+/* ── Anneau Électrique : présence = rotation ── */
+.ring {
+  padding: 2px;
+  border-radius: 9999px;
+  background: conic-gradient(from var(--a), #ff2e63, #ff7849, #16d9c5, #8b5cf6, #ff2e63);
+  animation: ring-spin 6s linear infinite;
+  display: inline-block;
+}
+.ring > * {
+  display: block;
+  border-radius: 9999px;
+  border: 2px solid var(--background);
+}
+.ring--static {
+  animation: none;
+}
+
+/* pile d'avatars chevauchés */
+.stack {
+  display: flex;
+}
+.stack > * {
+  margin-left: -10px;
+}
+.stack > *:first-child {
+  margin-left: 0;
+}
+
+/* ── Mèche de Vie : l'éphémère qui se consume (3 h) ── */
+.fuse {
+  height: 3px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #16d9c5, #ff7849, #ff2e63);
+  background-size: 300% 100%;
+  background-position: calc((1 - var(--life, 1)) * 100%) 0;
+  width: calc(var(--life, 1) * 100%);
+  box-shadow: 0 0 6px rgba(22, 217, 197, 0.5);
+  transition: width 1s linear;
+}
+
+/* point « live » qui ping */
+.live-dot {
+  position: relative;
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--accent);
+  box-shadow: 0 0 8px var(--accent);
+}
+.live-dot::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  background: var(--accent);
+  animation: live-ping 1.8s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* ── Marque ── */
 .brand-gradient {
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+  background: linear-gradient(100deg, var(--brand) 10%, var(--brand-2) 90%);
 }
 .text-gradient {
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-2) 100%);
+  background: linear-gradient(100deg, var(--brand) 10%, var(--brand-2) 90%);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
+/* le wordmark-enseigne : drop-shadow (suit les glyphes), jamais text-shadow */
+.neon-text {
+  filter: drop-shadow(0 0 14px rgba(255, 46, 99, 0.45));
+}
+.glow-cta {
+  box-shadow: 0 0 32px -6px var(--glow-rose), 0 4px 16px rgba(0, 0, 0, 0.4);
+  position: relative;
+  overflow: hidden;
+}
+.glow-cta::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.35) 50%, transparent 65%);
+  background-size: 250% 100%;
+  animation: cta-shimmer 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
 
-/* scrollbars discrètes */
+/* press physique au tap */
+.pressable {
+  transition: transform 120ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.pressable:active {
+  transform: scale(0.97);
+}
+
 ::-webkit-scrollbar {
   width: 0;
   height: 0;
 }
+.no-scrollbar {
+  scrollbar-width: none;
+}
 
-/* MapLibre : marqueurs custom */
+/* ── MapLibre : marqueurs + popups dans le langage Afterglow ── */
 .wi-marker {
   cursor: pointer;
   transform: translateZ(0);
 }
 .wi-pulse {
-  animation: wi-pulse 2s ease-out infinite;
-}
-@keyframes wi-pulse {
-  0% {
-    box-shadow: 0 0 0 0 rgba(255, 46, 99, 0.5);
-  }
-  100% {
-    box-shadow: 0 0 0 16px rgba(255, 46, 99, 0);
-  }
+  animation: neon-breathe 3.2s ease-in-out infinite;
 }
 .maplibregl-popup-content {
   background: var(--surface-2);
@@ -96,6 +270,79 @@ body {
   opacity: 0.5;
 }
 
+/* ── Mouvement ──
+   Règle : tout ce qui bouge SIGNIFIE (live, éphémère, action). */
+@keyframes ring-spin {
+  to {
+    --a: 360deg;
+  }
+}
+@keyframes neon-breathe {
+  0%,
+  100% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 0 18px -6px var(--glow, var(--glow-rose)),
+      0 0 50px -18px var(--glow, var(--glow-rose));
+  }
+  50% {
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.09),
+      0 0 30px -4px var(--glow, var(--glow-rose)),
+      0 0 90px -10px var(--glow, var(--glow-rose));
+  }
+}
+@keyframes live-ping {
+  0% {
+    transform: scale(1);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(2.6);
+    opacity: 0;
+  }
+}
+@keyframes glow-enter {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.97);
+    filter: brightness(1.8) saturate(1.4);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    filter: brightness(1) saturate(1);
+  }
+}
+@keyframes city-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(3%, -2%) scale(1.06);
+  }
+}
+@keyframes count-pop {
+  0% {
+    transform: scale(1);
+  }
+  40% {
+    transform: scale(1.18) rotate(-1.5deg);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+@keyframes cta-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  60%,
+  100% {
+    background-position: -100% 0;
+  }
+}
 @keyframes wi-slide-up {
   from {
     transform: translateY(100%);
@@ -103,9 +350,6 @@ body {
   to {
     transform: translateY(0);
   }
-}
-.animate-slide-up {
-  animation: wi-slide-up 0.25s cubic-bezier(0.16, 1, 0.3, 1);
 }
 @keyframes wi-fade {
   from {
@@ -115,6 +359,27 @@ body {
     opacity: 1;
   }
 }
+
+/* entrée des cartes : un néon qu'on branche, staggeré via --i */
+.animate-glow-enter {
+  animation: glow-enter 0.5s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--i, 0) * 60ms);
+}
+.animate-count-pop {
+  animation: count-pop 0.32s cubic-bezier(0.3, 1.6, 0.4, 1);
+}
+.animate-slide-up {
+  animation: wi-slide-up 0.42s cubic-bezier(0.32, 0.72, 0, 1);
+}
 .animate-fade {
-  animation: wi-fade 0.2s ease-out;
+  animation: wi-fade 0.25s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
 }

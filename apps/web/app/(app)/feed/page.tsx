@@ -57,12 +57,16 @@ export default function FeedPage() {
   return (
     <div className="min-h-[100dvh]">
       {/* top app bar — pouls de la ville, pas un clone IG */}
-      <header className="sticky top-0 z-20 border-b border-border bg-background/90 px-4 pb-2.5 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-md">
+      <header className="sticky top-0 z-20 border-b border-border bg-[rgba(7,7,13,0.72)] px-4 pb-2.5 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-xl">
         <div className="flex items-center justify-between">
-          <span className="text-2xl font-black tracking-tight">
-            Whoz<span className="text-gradient">in</span>
+          <span className="font-display text-2xl font-extrabold tracking-tight">
+            Whoz<span className="text-gradient neon-text">in</span>
           </span>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3.5">
+            <span className="glass flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold">
+              <span className="live-dot" style={{ width: 6, height: 6 }} />
+              MTL
+            </span>
             <Link href="/dating" aria-label="Rencontres" className="text-xl leading-none">
               💘
             </Link>

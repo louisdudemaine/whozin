@@ -22,17 +22,21 @@ export interface Category {
   label: { fr: string; en: string };
 }
 
+/**
+ * Palette « Afterglow » : chaque catégorie est un néon de devanture.
+ * La couleur sert de halo (glow) — jamais en aplat plein sur de grandes surfaces.
+ */
 export const CATEGORIES: Record<CategoryKey, Category> = {
-  bar: { key: "bar", emoji: "🍻", color: "#f59e0b", label: { fr: "Bar", en: "Bar" } },
-  restaurant: { key: "restaurant", emoji: "🍽️", color: "#ef4444", label: { fr: "Restaurant", en: "Restaurant" } },
-  cafe: { key: "cafe", emoji: "☕", color: "#a16207", label: { fr: "Café", en: "Café" } },
-  club: { key: "club", emoji: "🪩", color: "#a855f7", label: { fr: "Club", en: "Club" } },
-  festival: { key: "festival", emoji: "🎪", color: "#ec4899", label: { fr: "Festival", en: "Festival" } },
-  concert: { key: "concert", emoji: "🎶", color: "#6366f1", label: { fr: "Concert", en: "Concert" } },
-  sport: { key: "sport", emoji: "🏟️", color: "#22c55e", label: { fr: "Sport", en: "Sports" } },
-  park: { key: "park", emoji: "🌳", color: "#16a34a", label: { fr: "Parc", en: "Park" } },
-  event: { key: "event", emoji: "🎉", color: "#06b6d4", label: { fr: "Événement", en: "Event" } },
-  other: { key: "other", emoji: "📍", color: "#64748b", label: { fr: "Autre", en: "Other" } },
+  bar: { key: "bar", emoji: "🍻", color: "#FF2E63", label: { fr: "Bar", en: "Bar" } },
+  restaurant: { key: "restaurant", emoji: "🍽️", color: "#FF7849", label: { fr: "Restaurant", en: "Restaurant" } },
+  cafe: { key: "cafe", emoji: "☕", color: "#16D9C5", label: { fr: "Café", en: "Café" } },
+  club: { key: "club", emoji: "🪩", color: "#8B5CF6", label: { fr: "Club", en: "Club" } },
+  festival: { key: "festival", emoji: "🎪", color: "#FFC94D", label: { fr: "Festival", en: "Festival" } },
+  concert: { key: "concert", emoji: "🎶", color: "#E14FFF", label: { fr: "Concert", en: "Concert" } },
+  sport: { key: "sport", emoji: "🏟️", color: "#4D9FFF", label: { fr: "Sport", en: "Sports" } },
+  park: { key: "park", emoji: "🌳", color: "#3DDC84", label: { fr: "Parc", en: "Park" } },
+  event: { key: "event", emoji: "🎉", color: "#B6FF3C", label: { fr: "Événement", en: "Event" } },
+  other: { key: "other", emoji: "📍", color: "#8B8B9E", label: { fr: "Autre", en: "Other" } },
 };
 
 export const CATEGORY_LIST: Category[] = Object.values(CATEGORIES);
