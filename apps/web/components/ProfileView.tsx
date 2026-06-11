@@ -215,7 +215,7 @@ export function ProfileView({ profile }: { profile: Profile }) {
             <div className="mb-1 grid grid-cols-3 gap-2">
               {([
                 { v: "approx", emoji: "📍", label: locale === "fr" ? "Approx." : "Approx." },
-                { v: "precise", emoji: "🎯", label: locale === "fr" ? "Précise" : "Precise" },
+                { v: "precise", emoji: "📡", label: locale === "fr" ? "Proximité" : "Proximity" },
                 { v: "hidden", emoji: "👻", label: locale === "fr" ? "Cachée" : "Hidden" },
               ] as { v: LocationSharing; emoji: string; label: string }[]).map((o) => (
                 <button
@@ -240,8 +240,8 @@ export function ProfileView({ profile }: { profile: Profile }) {
                   : "Ghost mode: you appear nowhere. Your check-ins stay private."
                 : sharing === "precise"
                   ? locale === "fr"
-                    ? "Position précise au lieu où tu es."
-                    : "Precise location at your venue."
+                    ? "Tes amis (mutuels, en Proximité aussi) voient quand tu es à <150 m — jamais ta position exacte."
+                    : "Mutual friends (also in Proximity) see when you're within 150 m — never your exact spot."
                   : locale === "fr"
                     ? "Tu apparais au lieu, sans GPS exact. Recommandé."
                     : "You show at the venue, no exact GPS. Recommended."}

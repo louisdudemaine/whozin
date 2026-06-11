@@ -388,6 +388,28 @@ export async function updateLocationSharing(
   if (error) throw error;
 }
 
+// ----- Mode Proximité 📡 -----
+
+export async function upsertLivePosition(meId: string, lat: number, lng: number): Promise<void> {
+  await getSupabase()
+    .from("live_positions")
+    .upsert({ user_id: meId, lat, lng, updated_at: new Date().toISOString() });
+}
+
+export interface NearbyFriend {
+  id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  bucket: "ici" | "proche";
+}
+
+export async function fetchFriendsNearby(): Promise<NearbyFriend[]> {
+  const { data, error } = await getSupabase().rpc("friends_nearby");
+  if (error) throw error;
+  return (data ?? []) as NearbyFriend[];
+}
+
 // ----- Sondages « On va où? » -----
 
 export async function createPoll(
