@@ -143,6 +143,11 @@ export interface DatingCandidate {
   avatar_url: string | null;
   bio: string | null;
   vibe: string | null;
+  compat?: number;
+  /** « On s'est croisés » : lieu + moment du dernier croisement réel */
+  crossed_place?: string | null;
+  crossed_emoji?: string | null;
+  crossed_at?: string | null;
 }
 
 export interface Story {

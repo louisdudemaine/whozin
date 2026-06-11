@@ -126,7 +126,18 @@ export default function DatingPage() {
       {view === "deck" && (
         <div className="px-4 py-6">
           {current ? (
-            <div className="overflow-hidden rounded-3xl border border-border bg-surface">
+            <div
+              className={`overflow-hidden rounded-3xl border bg-surface ${current.crossed_place ? "halo-card halo-breathe" : "border-border"}`}
+              style={current.crossed_place ? ({ "--glow": "var(--glow-teal)", "--int": 0.85, borderColor: "rgba(22,217,197,.35)" } as React.CSSProperties) : undefined}
+            >
+              {current.crossed_place && (
+                <div className="flex items-center gap-2 px-4 py-2.5 text-[13px] font-bold" style={{ background: "rgba(22,217,197,.12)", color: "var(--accent)" }}>
+                  💫 {locale === "fr" ? "Vous vous êtes croisés" : "You crossed paths"} ·{" "}
+                  <span className="truncate">
+                    {current.crossed_emoji} {current.crossed_place}
+                  </span>
+                </div>
+              )}
               <div className="brand-gradient flex h-64 items-center justify-center">
                 <Avatar profile={{ username: current.username, display_name: current.display_name, avatar_url: current.avatar_url }} size={140} />
               </div>
