@@ -378,7 +378,7 @@ export async function updateProfile(
   patch: Partial<
     Pick<
       Profile,
-      "display_name" | "bio" | "avatar_url" | "username" | "pro_mode" | "pro_title" | "pro_company" | "pro_linkedin"
+      "display_name" | "bio" | "avatar_url" | "username" | "birthdate" | "pro_mode" | "pro_title" | "pro_company" | "pro_linkedin"
     >
   >
 ): Promise<void> {

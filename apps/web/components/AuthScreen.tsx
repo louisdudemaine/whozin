@@ -13,6 +13,17 @@ const DEMO = [
 
 const HERO_AVATARS = ["aria_mtl", "maxlevesque", "lea_tremblay", "sam_co"];
 
+/** âge entier à partir d'une date AAAA-MM-JJ (null si invalide) */
+function ageFrom(dateStr: string): number | null {
+  const d = new Date(dateStr + "T00:00:00");
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age;
+}
+
 export function AuthScreen() {
   const { t, locale, toggle } = useT();
   const supabase = getSupabase();
@@ -22,6 +33,7 @@ export function AuthScreen() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [displayName, setDisplayName] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const fr = locale === "fr";
@@ -35,10 +47,23 @@ export function AuthScreen() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
+        const age = ageFrom(birthdate);
+        if (age === null || age > 110) {
+          setMsg(fr ? "Entre ta vraie date de naissance." : "Enter your real date of birth.");
+          return;
+        }
+        if (age < 16) {
+          setMsg(
+            fr
+              ? "Whozin, c'est 16 ans et plus. Reviens-nous vite! 🌙"
+              : "Whozin is 16+. Come back soon! 🌙"
+          );
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { username, display_name: displayName } },
+          options: { data: { username, display_name: displayName, birthdate } },
         });
         if (error) throw error;
         setMsg(t.auth.checkEmail);
@@ -179,6 +204,13 @@ export function AuthScreen() {
               <>
                 <Field label={t.auth.username} value={username} onChange={setUsername} placeholder="aria_mtl" required />
                 <Field label={t.auth.displayName} value={displayName} onChange={setDisplayName} placeholder="Aria" />
+                <Field
+                  label={fr ? "Date de naissance (16+)" : "Date of birth (16+)"}
+                  type="date"
+                  value={birthdate}
+                  onChange={setBirthdate}
+                  required
+                />
               </>
             )}
             <Field label={t.auth.email} type="email" value={email} onChange={setEmail} placeholder="toi@exemple.com" required />

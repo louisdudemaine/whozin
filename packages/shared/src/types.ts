@@ -12,6 +12,8 @@ export interface Profile {
   display_name: string | null;
   avatar_url: string | null;
   bio: string | null;
+  /** date de naissance (jamais affichée — sert au verrou 18+ du dating) */
+  birthdate?: string | null;
   location_sharing?: LocationSharing;
   /** skin d'anneau gagné via drop (ex: 'gold') */
   ring_skin?: string | null;
@@ -152,6 +154,8 @@ export interface DatingCandidate {
   avatar_url: string | null;
   bio: string | null;
   vibe: string | null;
+  /** âge calculé côté base (la date de naissance ne sort jamais) */
+  age?: number | null;
   compat?: number;
   /** « On s'est croisés » : lieu + moment du dernier croisement réel */
   crossed_place?: string | null;

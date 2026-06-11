@@ -9,24 +9,50 @@ import {
   datingLike,
   fetchDatingCandidates,
   fetchDatingProfile,
+  updateProfile,
   upsertDatingProfile,
 } from "@/lib/data";
 import { Avatar } from "@/components/Avatar";
 
-type View = "loading" | "onboarding" | "deck";
+type View = "loading" | "dob" | "minor" | "onboarding" | "deck";
+
+/** âge entier à partir d'une date AAAA-MM-JJ (null si invalide) */
+function ageFrom(dateStr: string | null | undefined): number | null {
+  if (!dateStr) return null;
+  const d = new Date(dateStr + "T00:00:00");
+  if (isNaN(d.getTime())) return null;
+  const now = new Date();
+  let age = now.getFullYear() - d.getFullYear();
+  const m = now.getMonth() - d.getMonth();
+  if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age--;
+  return age;
+}
 
 export default function DatingPage() {
-  const { profile } = useAuth();
+  const { profile, refreshProfile } = useAuth();
   const { locale } = useT();
   const [view, setView] = useState<View>("loading");
   const [vibe, setVibe] = useState("");
+  const [dob, setDob] = useState("");
+  const [dobMsg, setDobMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cards, setCards] = useState<DatingCandidate[]>([]);
   const [i, setI] = useState(0);
   const [match, setMatch] = useState<{ who: DatingCandidate; convId: string | null } | null>(null);
+  const fr = locale === "fr";
 
   useEffect(() => {
     if (!profile) return;
+    // 🔞 porte d'âge AVANT tout : pas de date → on la demande ; mineur → mur 18+
+    const age = ageFrom(profile.birthdate);
+    if (age === null) {
+      setView("dob");
+      return;
+    }
+    if (age < 18) {
+      setView("minor");
+      return;
+    }
     fetchDatingProfile(profile.id).then((dp) => {
       if (dp?.enabled) {
         setVibe(dp.vibe ?? "");
@@ -37,6 +63,25 @@ export default function DatingPage() {
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [profile]);
+
+  async function saveDob() {
+    if (!profile) return;
+    const age = ageFrom(dob);
+    if (age === null || age < 13 || age > 110) {
+      setDobMsg(fr ? "Entre ta vraie date de naissance." : "Enter your real date of birth.");
+      return;
+    }
+    setBusy(true);
+    setDobMsg(null);
+    try {
+      await updateProfile(profile.id, { birthdate: dob });
+      await refreshProfile(); // relance la porte d'âge avec la vraie valeur
+    } catch {
+      setDobMsg(fr ? "Oups, réessaie." : "Oops, try again.");
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function loadDeck() {
     const c = await fetchDatingCandidates();
@@ -88,6 +133,59 @@ export default function DatingPage() {
       </header>
 
       {view === "loading" && <p className="py-20 text-center text-sm text-text-dim">…</p>}
+
+      {view === "dob" && (
+        <div className="px-6 py-10">
+          <div
+            className="halo-card rounded-3xl p-6"
+            style={{ "--glow": "var(--glow-rose)", "--int": 0.6 } as React.CSSProperties}
+          >
+            <p className="text-3xl">🔞</p>
+            <h2 className="mt-2 font-display text-xl font-extrabold">
+              {fr ? "Une dernière chose" : "One last thing"}
+            </h2>
+            <p className="mt-1 text-sm text-text-dim">
+              {fr
+                ? "Les rencontres sont réservées aux 18 ans et plus. Ta date de naissance reste privée — elle n'est jamais affichée, seul ton âge apparaît sur ta carte."
+                : "Dating is 18+ only. Your date of birth stays private — it's never shown, only your age appears on your card."}
+            </p>
+            <input
+              type="date"
+              value={dob}
+              onChange={(e) => setDob(e.target.value)}
+              className="mt-4 w-full rounded-xl border border-border bg-surface-2 px-4 py-3 outline-none focus:border-brand"
+            />
+            {dobMsg && <p className="mt-2 text-sm font-semibold text-brand-2">{dobMsg}</p>}
+            <button
+              onClick={saveDob}
+              disabled={busy || !dob}
+              className="glow-cta brand-gradient pressable mt-4 w-full rounded-full py-3.5 font-display text-sm font-bold text-white disabled:opacity-60"
+            >
+              {busy ? "…" : fr ? "Confirmer" : "Confirm"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {view === "minor" && (
+        <div className="px-6 py-14 text-center">
+          <p className="text-5xl">🌙</p>
+          <h2 className="mt-3 font-display text-2xl font-extrabold">
+            {fr ? "Les rencontres, c'est 18+" : "Dating is 18+"}
+          </h2>
+          <p className="mx-auto mt-2 max-w-xs text-sm text-text-dim">
+            {fr
+              ? "Cette section ouvrira pour toi à tes 18 ans. En attendant, toute la ville reste à toi — la carte, les soirées, les amis."
+              : "This section unlocks when you turn 18. Meanwhile, the whole city is still yours — the map, the nights, the friends."}
+          </p>
+          <Link
+            href="/feed"
+            className="brand-gradient pressable mt-6 inline-block rounded-full px-8 py-3 font-display text-sm font-bold text-white"
+          >
+            {fr ? "Retour au feed" : "Back to the feed"}
+          </Link>
+        </div>
+      )}
 
       {view === "onboarding" && (
         <div className="px-6 py-8">
@@ -144,6 +242,9 @@ export default function DatingPage() {
               <div className="p-5">
                 <p className="flex items-center gap-2 text-xl font-black">
                   {current.display_name || current.username}
+                  {typeof current.age === "number" && (
+                    <span className="font-display text-lg font-bold text-text-dim">{current.age}</span>
+                  )}
                   {current.crossed_place && (
                     <span
                       className="rounded-full px-2 py-0.5 text-[10px] font-bold"
