@@ -20,6 +20,7 @@ import {
   uploadMedia,
 } from "@/lib/data";
 import { Avatar } from "@/components/Avatar";
+import { findSpotifyLink, SpotifyEmbed } from "@/lib/spotify";
 import { PollCard, PollComposer } from "@/components/Poll";
 import { createSquadInvite } from "@/lib/data";
 
@@ -243,16 +244,23 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
                         )}
                       </span>
                     ) : (
-                      <span
-                        className="whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[15px]"
-                        style={
-                          mine
-                            ? { background: "var(--brand)", color: "#fff", borderBottomRightRadius: 4 }
-                            : { background: "var(--surface-2)", color: "var(--text)", borderBottomLeftRadius: 4 }
-                        }
-                      >
-                        {m.body}
-                      </span>
+                      <>
+                        <span
+                          className="whitespace-pre-wrap break-words rounded-2xl px-3.5 py-2 text-[15px]"
+                          style={
+                            mine
+                              ? { background: "var(--brand)", color: "#fff", borderBottomRightRadius: 4 }
+                              : { background: "var(--surface-2)", color: "var(--text)", borderBottomLeftRadius: 4 }
+                          }
+                        >
+                          {m.body}
+                        </span>
+                        {findSpotifyLink(m.body) && (
+                          <span className="mt-1.5 block w-64 max-w-full">
+                            <SpotifyEmbed url={findSpotifyLink(m.body)!} height={80} />
+                          </span>
+                        )}
+                      </>
                     )}
                   </div>
                 </div>

@@ -18,7 +18,12 @@ import type { LocationSharing } from "@whosin/shared";
 import { Avatar } from "./Avatar";
 import { PostModal } from "./PostModal";
 import { SafetyMenu } from "./SafetyMenu";
-import { fetchSeenIrl, iBlocked } from "@/lib/data";
+import { fetchMyDrops, fetchSeenIrl, iBlocked, type MyDrop } from "@/lib/data";
+
+/** skins d'anneau gagnés via drops */
+const RING_SKINS: Record<string, string> = {
+  gold: "conic-gradient(from 0deg, #ffc94d, #ff7849, #ffe9a8, #ffc94d)",
+};
 import { MessageButton } from "./MessageButton";
 
 export function ProfileView({ profile }: { profile: Profile }) {
@@ -36,6 +41,12 @@ export function ProfileView({ profile }: { profile: Profile }) {
   const [openPost, setOpenPost] = useState<Post | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [seenIrl, setSeenIrl] = useState(false);
+  const [myDrops, setMyDrops] = useState<MyDrop[]>([]);
+
+  useEffect(() => {
+    if (isMe) fetchMyDrops().then(setMyDrops).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isMe]);
 
   useEffect(() => {
     fetchProfileStats(profile.id, me?.id ?? null).then(setStats).catch(() => {});
@@ -113,7 +124,22 @@ export function ProfileView({ profile }: { profile: Profile }) {
 
       <div className="p-5">
         <div className="flex items-center gap-4">
-          <Avatar profile={profile} size={72} />
+          {profile.ring_skin && RING_SKINS[profile.ring_skin] ? (
+            <span
+              className="inline-block rounded-full p-[3px]"
+              style={{
+                background: RING_SKINS[profile.ring_skin],
+                filter: "drop-shadow(0 0 12px rgba(255,201,77,.5))",
+              }}
+              title="Anneau exclusif 🎁"
+            >
+              <span className="block rounded-full border-2 border-background">
+                <Avatar profile={profile} size={72} />
+              </span>
+            </span>
+          ) : (
+            <Avatar profile={profile} size={72} />
+          )}
           <div className="flex flex-1 justify-around text-center">
             <Stat n={stats?.checkins ?? 0} label={t.profile.checkins} />
             <Stat n={stats?.followers ?? 0} label={t.profile.followers} />
@@ -169,6 +195,27 @@ export function ProfileView({ profile }: { profile: Profile }) {
           )
         ))}
       </div>
+
+      {isMe && myDrops.length > 0 && (
+        <div className="border-t border-border px-5 py-3">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-text-dim">
+            🎁 {locale === "fr" ? "Ma collection" : "My collection"}
+          </p>
+          <div className="no-scrollbar flex gap-2.5 overflow-x-auto">
+            {myDrops.map((d, i) => (
+              <div
+                key={i}
+                className="flex shrink-0 items-center gap-2 rounded-2xl border px-3 py-2"
+                style={{ borderColor: "rgba(255,201,77,.35)", background: "rgba(255,201,77,.08)" }}
+                title={d.place_name}
+              >
+                <span className="text-xl">{d.emoji}</span>
+                <span className="text-xs font-bold">{d.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       <div className="flex items-center justify-center gap-2 border-t border-border py-2.5 text-xs font-semibold uppercase tracking-wide text-text">
         <svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2">

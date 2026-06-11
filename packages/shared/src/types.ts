@@ -13,6 +13,8 @@ export interface Profile {
   avatar_url: string | null;
   bio: string | null;
   location_sharing?: LocationSharing;
+  /** skin d'anneau gagné via drop (ex: 'gold') */
+  ring_skin?: string | null;
   created_at: string;
 }
 
@@ -37,6 +39,7 @@ export interface CheckIn {
   user_id: string;
   place_id: string;
   message: string | null;
+  spotify_url?: string | null;
   created_at: string;
   expires_at: string;
   author?: Profile;

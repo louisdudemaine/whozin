@@ -94,7 +94,8 @@ export async function checkIn(
   placeId: string,
   message: string | null,
   lat?: number,
-  lng?: number
+  lng?: number,
+  spotifyUrl?: string | null
 ): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.from("check_ins").insert({
@@ -103,6 +104,7 @@ export async function checkIn(
     message: message || null,
     lat: lat ?? null,
     lng: lng ?? null,
+    spotify_url: spotifyUrl || null,
   });
   if (error) throw error;
 }
@@ -386,6 +388,68 @@ export async function updateLocationSharing(
     .update({ location_sharing: value })
     .eq("id", meId);
   if (error) throw error;
+}
+
+// ----- Drops géolocalisés 🎁 -----
+
+export interface PlaceDrop {
+  id: string;
+  name: string;
+  emoji: string;
+  kind: "badge" | "ring_skin";
+  skin: string | null;
+  claimed: boolean;
+}
+
+export async function fetchPlaceDrop(placeId: string, meId: string): Promise<PlaceDrop | null> {
+  const supabase = getSupabase();
+  const { data: drop } = await supabase
+    .from("drops")
+    .select("id,name,emoji,kind,skin")
+    .eq("place_id", placeId)
+    .maybeSingle();
+  if (!drop) return null;
+  const { count } = await supabase
+    .from("drop_claims")
+    .select("drop_id", { count: "exact", head: true })
+    .eq("drop_id", (drop as { id: string }).id)
+    .eq("user_id", meId);
+  return { ...(drop as Omit<PlaceDrop, "claimed">), claimed: (count ?? 0) > 0 };
+}
+
+export async function claimDrop(dropId: string): Promise<{ name: string; emoji: string }> {
+  const { data, error } = await getSupabase().rpc("claim_drop", { d_id: dropId });
+  if (error) throw error;
+  return data as { name: string; emoji: string };
+}
+
+export interface MyDrop {
+  name: string;
+  emoji: string;
+  kind: string;
+  skin: string | null;
+  claimed_at: string;
+  place_name: string;
+}
+
+export async function fetchMyDrops(): Promise<MyDrop[]> {
+  const { data } = await getSupabase().rpc("my_drops");
+  return (data ?? []) as MyDrop[];
+}
+
+// ----- Prédiction d'affluence 🔮 -----
+
+export interface PlaceForecast {
+  peak_hour: number;
+  confidence: number;
+  samples: number;
+}
+
+export async function fetchPlaceForecast(placeId: string): Promise<PlaceForecast | null> {
+  const { data } = await getSupabase().rpc("place_forecast", { p_place: placeId });
+  const row = (data as PlaceForecast[] | null)?.[0];
+  if (!row || Number(row.samples) < 4) return null; // pas assez d'historique = pas de prédiction
+  return { ...row, samples: Number(row.samples) };
 }
 
 // ----- Vu IRL ✓ + Memories 📸 -----
