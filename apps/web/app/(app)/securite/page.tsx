@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
+import { GuardianCard } from "@/components/Guardian";
 
 type Factor = { id: string; friendly_name?: string | null; status: string };
 
@@ -184,6 +185,8 @@ export default function SecurityPage() {
 
           {msg && <p className="mt-3 text-center text-sm font-semibold text-brand-2">{msg}</p>}
         </div>
+
+        <GuardianCard />
 
         <div className="mt-4 rounded-3xl border border-border bg-surface p-5 text-sm text-text-dim">
           <p className="font-bold text-text">🛡️ {fr ? "Déjà en place" : "Already in place"}</p>

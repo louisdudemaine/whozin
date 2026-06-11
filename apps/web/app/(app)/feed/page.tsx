@@ -13,6 +13,7 @@ import { CheckInSheet } from "@/components/CheckInSheet";
 import { StoriesBar } from "@/components/Stories";
 import { NearbyStrip } from "@/components/NearbyStrip";
 import { BeaconStrip } from "@/components/BeaconStrip";
+import { GuardianStrips } from "@/components/Guardian";
 import { TravelPill } from "@/components/TravelPill";
 
 export default function FeedPage() {
@@ -128,6 +129,7 @@ export default function FeedPage() {
               <span className="text-text-dim">→</span>
             </Link>
           )}
+          <GuardianStrips />
           <BeaconStrip />
           <NearbyStrip />
           <StoriesBar />

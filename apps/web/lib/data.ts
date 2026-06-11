@@ -1148,3 +1148,52 @@ export async function fetchCityPulse(): Promise<CityPulse | null> {
   if (error) return null;
   return (data ?? null) as CityPulse | null;
 }
+
+// ===== 🛡️ Ange gardien =====
+
+export interface GuardianInfo {
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  active_until: string;
+}
+
+export interface Protege {
+  user_id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  active_until: string;
+  last_place: string | null;
+  last_seen: string | null;
+}
+
+export async function guardianStart(
+  guardianUsername: string,
+  hours: number
+): Promise<{ guardian_id: string } & GuardianInfo> {
+  const { data, error } = await getSupabase().rpc("guardian_start", {
+    guardian_username: guardianUsername,
+    hours,
+  });
+  if (error) throw error;
+  return data as { guardian_id: string } & GuardianInfo;
+}
+
+export async function guardianHome(): Promise<string | null> {
+  const { data, error } = await getSupabase().rpc("guardian_home");
+  if (error) throw error;
+  return (data as { guardian_id: string } | null)?.guardian_id ?? null;
+}
+
+export async function fetchMyGuardian(): Promise<GuardianInfo | null> {
+  const { data, error } = await getSupabase().rpc("my_guardian");
+  if (error) return null;
+  return (data ?? null) as GuardianInfo | null;
+}
+
+export async function fetchMyProteges(): Promise<Protege[]> {
+  const { data, error } = await getSupabase().rpc("my_proteges");
+  if (error) return [];
+  return (data ?? []) as Protege[];
+}
