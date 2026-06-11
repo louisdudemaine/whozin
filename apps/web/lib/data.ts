@@ -388,6 +388,66 @@ export async function updateLocationSharing(
   if (error) throw error;
 }
 
+// ----- Mode Balise 🔦 -----
+
+export interface ActiveBeacon {
+  id: string;
+  user_id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  message: string | null;
+  expires_at: string;
+  conversation_id: string | null;
+  responses: number;
+  i_responded: boolean;
+}
+
+export async function fetchActiveBeacons(): Promise<ActiveBeacon[]> {
+  const { data, error } = await getSupabase().rpc("active_beacons");
+  if (error) throw error;
+  return ((data ?? []) as ActiveBeacon[]).map((b) => ({ ...b, responses: Number(b.responses) }));
+}
+
+export async function launchBeacon(meId: string, message: string | null): Promise<string> {
+  const { data, error } = await getSupabase()
+    .from("beacons")
+    .insert({ user_id: meId, message })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return (data as { id: string }).id;
+}
+
+export async function extinguishBeacon(beaconId: string): Promise<void> {
+  await getSupabase().from("beacons").delete().eq("id", beaconId);
+}
+
+export async function respondBeacon(
+  beaconId: string
+): Promise<{ responses: number; conversation_id: string | null }> {
+  const { data, error } = await getSupabase().rpc("respond_beacon", { b_id: beaconId });
+  if (error) throw error;
+  const r = data as { responses: number; conversation_id: string | null };
+  return { responses: Number(r.responses), conversation_id: r.conversation_id ?? null };
+}
+
+/** Amis mutuels (follow dans les deux sens). */
+export async function fetchMutuals(meId: string): Promise<Profile[]> {
+  const supabase = getSupabase();
+  const [{ data: fol }, { data: ing }] = await Promise.all([
+    supabase.from("follows").select("follower_id").eq("following_id", meId),
+    supabase.from("follows").select("following_id").eq("follower_id", meId),
+  ]);
+  const followers = new Set(((fol ?? []) as { follower_id: string }[]).map((r) => r.follower_id));
+  const ids = ((ing ?? []) as { following_id: string }[])
+    .map((r) => r.following_id)
+    .filter((id) => followers.has(id));
+  if (ids.length === 0) return [];
+  const { data: profiles } = await supabase.from("profiles").select(PROFILE_COLS).in("id", ids);
+  return (profiles ?? []) as Profile[];
+}
+
 // ----- Mode Proximité 📡 -----
 
 export async function upsertLivePosition(meId: string, lat: number, lng: number): Promise<void> {

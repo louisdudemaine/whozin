@@ -12,6 +12,7 @@ import { LiveNow } from "@/components/LiveNow";
 import { CheckInSheet } from "@/components/CheckInSheet";
 import { StoriesBar } from "@/components/Stories";
 import { NearbyStrip } from "@/components/NearbyStrip";
+import { BeaconStrip } from "@/components/BeaconStrip";
 
 export default function FeedPage() {
   const { t, locale } = useT();
@@ -112,6 +113,7 @@ export default function FeedPage() {
         <p className="py-16 text-center text-sm text-text-dim">{t.common.loading}</p>
       ) : (
         <>
+          <BeaconStrip />
           <NearbyStrip />
           <StoriesBar />
           <LiveNow checkIns={stories} onSelectPlace={setSelected} />
