@@ -6,6 +6,7 @@ import { getCategory, timeAgo, type CheckIn, type NearbyPlace } from "@whosin/sh
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { checkIn, fetchCheckIns, leaveCheckIn } from "@/lib/data";
+import { renderShareCard, shareImage } from "@/lib/sharecard";
 import { Avatar } from "./Avatar";
 import { MessageButton } from "./MessageButton";
 
@@ -126,13 +127,29 @@ export function CheckInSheet({
         {/* action check-in */}
         <div className="border-t border-border p-4 pb-[max(16px,env(safe-area-inset-bottom))]">
           {mine ? (
-            <button
-              onClick={doLeave}
-              disabled={busy}
-              className="w-full rounded-xl border border-border py-3 font-semibold text-text-dim"
-            >
-              {t.checkin.leave}
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={doLeave}
+                disabled={busy}
+                className="flex-1 rounded-xl border border-border py-3 font-semibold text-text-dim"
+              >
+                {t.checkin.leave}
+              </button>
+              <button
+                onClick={async () => {
+                  const blob = await renderShareCard({
+                    title: place.name,
+                    subtitle: locale === "fr" ? "J'y suis. Who's in? 👀" : "I'm here. Who's in? 👀",
+                    emoji: cat.emoji,
+                    accent: cat.color,
+                  });
+                  await shareImage(blob, "whozin-sortie.png", `${place.name} — Whozin`);
+                }}
+                className="glow-cta brand-gradient pressable flex-1 rounded-xl py-3 font-bold text-white"
+              >
+                📤 {locale === "fr" ? "Partager" : "Share"}
+              </button>
+            </div>
           ) : (
             <div className="flex flex-col gap-2">
               <input

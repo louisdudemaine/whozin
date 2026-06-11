@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import type { Post, Profile } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
@@ -81,9 +82,18 @@ export function ProfileView({ profile }: { profile: Profile }) {
             {locale === "fr" ? "EN" : "FR"}
           </button>
           {isMe && (
-            <button onClick={signOut} className="text-xs text-text-dim">
-              {t.auth.signOut}
-            </button>
+            <>
+              <Link
+                href="/wrapped"
+                className="glass rounded-full px-2.5 py-1 text-xs font-bold"
+                aria-label="Wrapped"
+              >
+                🎁
+              </Link>
+              <button onClick={signOut} className="text-xs text-text-dim">
+                {t.auth.signOut}
+              </button>
+            </>
           )}
           {!isMe && (
             <SafetyMenu
