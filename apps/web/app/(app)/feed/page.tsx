@@ -6,7 +6,7 @@ import type { CheckIn, NearbyPlace, Post } from "@whosin/shared";
 import { useT } from "@/lib/locale";
 import { useAuth } from "@/lib/auth";
 import { getSupabase } from "@/lib/supabase";
-import { fetchActiveCheckIns, fetchFeed, unreadMessagesCount } from "@/lib/data";
+import { fetchActiveCheckIns, fetchFeed, fetchNightRecap, unreadMessagesCount } from "@/lib/data";
 import { PostCard } from "@/components/PostCard";
 import { LiveNow } from "@/components/LiveNow";
 import { CheckInSheet } from "@/components/CheckInSheet";
@@ -23,6 +23,7 @@ export default function FeedPage() {
   const [selected, setSelected] = useState<NearbyPlace | null>(null);
   const [unreadDm, setUnreadDm] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [recapStops, setRecapStops] = useState(0);
 
   const load = useCallback(async () => {
     try {
@@ -39,6 +40,10 @@ export default function FeedPage() {
 
   useEffect(() => {
     load();
+    // 🌅 le matin, la nuit d'hier remonte à la surface
+    if (new Date().getHours() < 14) {
+      fetchNightRecap().then((r) => setRecapStops(r?.stops.length ?? 0));
+    }
     const onRefresh = () => load();
     window.addEventListener("wi:refresh", onRefresh);
     const supabase = getSupabase();
@@ -111,6 +116,18 @@ export default function FeedPage() {
         <p className="py-16 text-center text-sm text-text-dim">{t.common.loading}</p>
       ) : (
         <>
+          {recapStops > 0 && (
+            <Link
+              href="/recap"
+              className="halo-card pressable mx-3 mt-3 flex items-center justify-between rounded-2xl px-4 py-3"
+              style={{ "--glow": "rgba(255,201,77,.45)", "--int": 0.65 } as React.CSSProperties}
+            >
+              <span className="flex items-center gap-2 text-sm font-bold">
+                🌅 {locale === "fr" ? "Ton recap d'hier soir est prêt" : "Last night's recap is ready"}
+              </span>
+              <span className="text-text-dim">→</span>
+            </Link>
+          )}
           <BeaconStrip />
           <NearbyStrip />
           <StoriesBar />

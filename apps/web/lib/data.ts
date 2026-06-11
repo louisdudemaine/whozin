@@ -10,6 +10,7 @@ import type {
   DatingProfile,
   Message,
   NearbyPlace,
+  NightRecap,
   Place,
   Post,
   Profile,
@@ -1129,4 +1130,12 @@ export async function unreadMessagesCount(meId: string): Promise<number> {
     .neq("sender_id", meId)
     .is("read_at", null);
   return count ?? 0;
+}
+
+// ===== 🌅 Recap du lendemain =====
+
+export async function fetchNightRecap(): Promise<NightRecap | null> {
+  const { data, error } = await getSupabase().rpc("night_recap");
+  if (error) return null;
+  return (data ?? null) as NightRecap | null;
 }

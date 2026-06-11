@@ -1,0 +1,89 @@
+import { NextRequest, NextResponse } from "next/server";
+
+/**
+ * 🌅 Narration du recap — IA si ANTHROPIC_API_KEY, sinon plume déterministe.
+ * Le client envoie les chiffres déjà agrégés par le RPC night_recap (jamais de données brutes).
+ */
+
+export const runtime = "nodejs";
+
+interface RecapPayload {
+  stops?: { name: string; category: string }[];
+  crossedNames?: string[];
+  likes?: number;
+  matches?: number;
+  locale?: string;
+}
+
+function fallbackNarration(p: RecapPayload, fr: boolean): string {
+  const n = p.stops?.length ?? 0;
+  const c = p.crossedNames?.length ?? 0;
+  const likes = p.likes ?? 0;
+  const last = p.stops?.[n - 1]?.name;
+  if (n === 0) {
+    return fr
+      ? "Soirée tranquille — la ville t'attend ce soir. 🌙"
+      : "Quiet night — the city's waiting for you tonight. 🌙";
+  }
+  const bits: string[] = [];
+  bits.push(
+    fr
+      ? `${n} spot${n > 1 ? "s" : ""}${last ? `, fini au ${last}` : ""}`
+      : `${n} spot${n > 1 ? "s" : ""}${last ? `, ended at ${last}` : ""}`
+  );
+  if (c > 0)
+    bits.push(
+      fr
+        ? `${c} ${c > 1 ? "personnes croisées" : "personne croisée"}`
+        : `crossed paths with ${c}`
+    );
+  if (likes > 0) bits.push(fr ? `${likes} likes` : `${likes} likes`);
+  if ((p.matches ?? 0) > 0) bits.push(fr ? `${p.matches} match 💘` : `${p.matches} match 💘`);
+  return fr
+    ? `${bits.join(" · ")} — la ville se souvient de toi. ✨`
+    : `${bits.join(" · ")} — the city remembers you. ✨`;
+}
+
+export async function POST(req: NextRequest) {
+  let body: RecapPayload;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "json invalide" }, { status: 400 });
+  }
+  const fr = body.locale !== "en";
+
+  const key = process.env.ANTHROPIC_API_KEY;
+  if (key && (body.stops?.length ?? 0) > 0) {
+    try {
+      const res = await fetch("https://api.anthropic.com/v1/messages", {
+        method: "POST",
+        headers: {
+          "x-api-key": key,
+          "anthropic-version": "2023-06-01",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "claude-haiku-4-5-20251001",
+          max_tokens: 200,
+          messages: [
+            {
+              role: "user",
+              content: `Tu racontes la soirée d'hier d'un utilisateur de Whozin (app sociale nightlife à Montréal), comme un ami complice le lendemain matin. En ${fr ? "français québécois" : "English"}, 2 phrases max, chaleureux et un peu taquin, sans hashtags. Arrêts: ${(body.stops ?? [])
+                .map((s) => `${s.name} (${s.category})`)
+                .join(" → ")}. Croisé: ${(body.crossedNames ?? []).join(", ") || "personne"}. ${body.likes ?? 0} likes reçus, ${body.matches ?? 0} match(s).`,
+            },
+          ],
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const text = data?.content?.[0]?.text;
+        if (text) return NextResponse.json({ narration: text, ai: true });
+      }
+    } catch {
+      /* IA en panne -> plume locale */
+    }
+  }
+  return NextResponse.json({ narration: fallbackNarration(body, fr), ai: false });
+}

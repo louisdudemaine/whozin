@@ -163,6 +163,17 @@ export interface DatingCandidate {
   crossed_at?: string | null;
 }
 
+/** 🌅 Recap du lendemain — renvoyé par le RPC night_recap */
+export interface NightRecap {
+  night_start: string;
+  night_end: string;
+  stops: { name: string; category: string; at: string }[];
+  crossed: { username: string; display_name: string | null; avatar_url: string | null; place_name: string }[];
+  likes: number;
+  posts: number;
+  matches: number;
+}
+
 export interface Story {
   id: string;
   user_id: string;
