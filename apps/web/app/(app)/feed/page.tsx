@@ -118,15 +118,24 @@ export default function FeedPage() {
           <StoriesBar />
           <LiveNow checkIns={stories} onSelectPlace={setSelected} />
 
-          <Link
-            href="/events"
-            className="mx-3 mt-3 flex items-center justify-between rounded-2xl border border-border bg-surface px-4 py-3"
-          >
-            <span className="flex items-center gap-2 text-sm font-bold">
-              🎟️ {locale === "fr" ? "Shows & événements près de toi" : "Shows & events near you"}
-            </span>
-            <span className="text-text-dim">→</span>
-          </Link>
+          <div className="mx-3 mt-3 flex gap-2.5">
+            <Link
+              href="/genius"
+              className="halo-card pressable flex flex-1 items-center justify-between rounded-2xl px-4 py-3"
+              style={{ "--glow": "var(--glow-rose)", "--int": 0.5 } as React.CSSProperties}
+            >
+              <span className="flex items-center gap-2 text-sm font-bold">
+                🧞 {locale === "fr" ? "Génère ta soirée" : "Generate your night"}
+              </span>
+              <span className="text-text-dim">→</span>
+            </Link>
+            <Link
+              href="/events"
+              className="pressable flex items-center gap-2 rounded-2xl border border-border bg-surface px-4 py-3 text-sm font-bold"
+            >
+              🎟️
+            </Link>
+          </div>
 
           <div className="px-3 pt-3">
             {posts.length === 0 ? (
