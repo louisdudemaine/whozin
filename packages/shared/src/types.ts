@@ -15,6 +15,11 @@ export interface Profile {
   location_sharing?: LocationSharing;
   /** skin d'anneau gagné via drop (ex: 'gold') */
   ring_skin?: string | null;
+  /** mode professionnel 💼 */
+  pro_mode?: boolean;
+  pro_title?: string | null;
+  pro_company?: string | null;
+  pro_linkedin?: string | null;
   created_at: string;
 }
 
@@ -52,6 +57,7 @@ export interface Post {
   place_id: string | null;
   body: string | null;
   photo_url: string | null;
+  media_type?: "image" | "video";
   visibility: Visibility;
   lat: number | null;
   lng: number | null;
@@ -158,6 +164,7 @@ export interface Story {
   user_id: string;
   place_id: string | null;
   media_url: string;
+  media_type?: "image" | "video";
   caption: string | null;
   created_at: string;
   expires_at: string;

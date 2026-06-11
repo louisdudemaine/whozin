@@ -37,6 +37,10 @@ export function ProfileView({ profile }: { profile: Profile }) {
   const [displayName, setDisplayName] = useState(profile.display_name ?? "");
   const [bio, setBio] = useState(profile.bio ?? "");
   const [sharing, setSharing] = useState<LocationSharing>(profile.location_sharing ?? "approx");
+  const [proMode, setProMode] = useState(!!profile.pro_mode);
+  const [proTitle, setProTitle] = useState(profile.pro_title ?? "");
+  const [proCompany, setProCompany] = useState(profile.pro_company ?? "");
+  const [proLinkedin, setProLinkedin] = useState(profile.pro_linkedin ?? "");
   const [busy, setBusy] = useState(false);
   const [openPost, setOpenPost] = useState<Post | null>(null);
   const [blocked, setBlocked] = useState(false);
@@ -76,7 +80,14 @@ export function ProfileView({ profile }: { profile: Profile }) {
   async function saveProfile() {
     setBusy(true);
     try {
-      await updateProfile(profile.id, { display_name: displayName, bio });
+      await updateProfile(profile.id, {
+        display_name: displayName,
+        bio,
+        pro_mode: proMode,
+        pro_title: proTitle.trim() || null,
+        pro_company: proCompany.trim() || null,
+        pro_linkedin: proLinkedin.trim() || null,
+      });
       await updateLocationSharing(profile.id, sharing);
       await refreshProfile();
       setEditing(false);
@@ -167,6 +178,21 @@ export function ProfileView({ profile }: { profile: Profile }) {
               </span>
             )}
           </p>
+          {profile.pro_mode && (profile.pro_title || profile.pro_company) && (
+            <p className="mt-1 flex flex-wrap items-center gap-1.5 text-sm">
+              <span className="rounded-md px-1.5 py-0.5 text-[10px] font-bold" style={{ background: "rgba(77,159,255,.15)", color: "#4d9fff" }}>
+                💼 PRO
+              </span>
+              <span className="text-text-dim">
+                {[profile.pro_title, profile.pro_company].filter(Boolean).join(" · ")}
+              </span>
+              {profile.pro_linkedin && (
+                <a href={profile.pro_linkedin} target="_blank" rel="noopener noreferrer" className="font-semibold" style={{ color: "#4d9fff" }}>
+                  in↗
+                </a>
+              )}
+            </p>
+          )}
           {profile.bio && <p className="mt-0.5 text-sm text-text-dim">{profile.bio}</p>}
         </div>
 
@@ -315,6 +341,49 @@ export function ProfileView({ profile }: { profile: Profile }) {
                     ? "Tu apparais au lieu, sans GPS exact. Recommandé."
                     : "You show at the venue, no exact GPS. Recommended."}
             </p>
+
+            {/* mode pro 💼 */}
+            <div className="mb-4 rounded-2xl border border-border bg-surface-2 p-3">
+              <button
+                onClick={() => setProMode((v) => !v)}
+                className="flex w-full items-center justify-between"
+              >
+                <span className="text-sm font-bold">💼 {locale === "fr" ? "Mode professionnel" : "Professional mode"}</span>
+                <span
+                  className="relative h-6 w-11 rounded-full transition-colors"
+                  style={{ background: proMode ? "#4d9fff" : "var(--border)" }}
+                >
+                  <span
+                    className="absolute top-0.5 h-5 w-5 rounded-full bg-white transition-transform"
+                    style={{ transform: proMode ? "translateX(22px)" : "translateX(2px)" }}
+                  />
+                </span>
+              </button>
+              {proMode && (
+                <div className="mt-3 flex flex-col gap-2">
+                  <input
+                    value={proTitle}
+                    onChange={(e) => setProTitle(e.target.value)}
+                    maxLength={80}
+                    placeholder={locale === "fr" ? "Titre (ex: Développeuse produit)" : "Title"}
+                    className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand"
+                  />
+                  <input
+                    value={proCompany}
+                    onChange={(e) => setProCompany(e.target.value)}
+                    maxLength={80}
+                    placeholder={locale === "fr" ? "Entreprise / projet" : "Company / project"}
+                    className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand"
+                  />
+                  <input
+                    value={proLinkedin}
+                    onChange={(e) => setProLinkedin(e.target.value)}
+                    placeholder="https://linkedin.com/in/…"
+                    className="rounded-xl border border-border bg-surface px-3 py-2.5 text-sm outline-none focus:border-brand"
+                  />
+                </div>
+              )}
+            </div>
 
             <div className="flex gap-2">
               <button

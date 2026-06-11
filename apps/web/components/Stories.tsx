@@ -120,10 +120,13 @@ function StoryViewer({
   const [si, setSi] = useState(0);
   const [paused, setPaused] = useState(false);
   const [viewers, setViewers] = useState<number | null>(null);
+  const [videoDur, setVideoDur] = useState<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const group = groups[gi];
   const story = group?.stories[si];
+  const isVideo = story?.media_type === "video";
 
   const next = useCallback(() => {
     if (!group) return onClose();
@@ -151,14 +154,23 @@ function StoryViewer({
     return () => setViewers(null);
   }, [story, profile]);
 
-  // auto-avance
+  // auto-avance (images: 5s ; vidéos: à la fin via onEnded)
   useEffect(() => {
-    if (paused || !story) return;
+    setVideoDur(null);
+    if (paused || !story || story.media_type === "video") return;
     timerRef.current = setTimeout(next, STORY_MS);
     return () => {
       if (timerRef.current) clearTimeout(timerRef.current);
     };
   }, [story, paused, next]);
+
+  // pause/reprise vidéo au maintien
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (paused) v.pause();
+    else v.play().catch(() => {});
+  }, [paused]);
 
   if (!group || !story) return null;
   const cat = story.place ? getCategory(story.place.category) : null;
@@ -167,8 +179,21 @@ function StoryViewer({
   return (
     <div className="fixed inset-0 z-[80] flex flex-col bg-background">
       {/* média */}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img src={story.media_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      {isVideo ? (
+        <video
+          ref={videoRef}
+          key={story.id}
+          src={story.media_url}
+          autoPlay
+          playsInline
+          onLoadedMetadata={(e) => setVideoDur(e.currentTarget.duration)}
+          onEnded={next}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={story.media_url} alt="" className="absolute inset-0 h-full w-full object-cover" />
+      )}
       <div className="absolute inset-x-0 top-0 h-28" style={{ background: "linear-gradient(rgba(7,7,13,.8), transparent)" }} />
       <div className="absolute inset-x-0 bottom-0 h-36" style={{ background: "var(--scrim)" }} />
 
@@ -180,7 +205,10 @@ function StoryViewer({
               className="h-full rounded-full bg-white"
               style={{
                 width: i < si ? "100%" : i > si ? "0%" : undefined,
-                animation: i === si && !paused ? `story-progress ${STORY_MS}ms linear forwards` : undefined,
+                animation:
+                  i === si && !paused
+                    ? `story-progress ${isVideo ? Math.round((videoDur ?? 10) * 1000) : STORY_MS}ms linear forwards`
+                    : undefined,
               }}
             />
           </div>
@@ -248,6 +276,8 @@ function StoryComposer({ onClose, onPublished }: { onClose: () => void; onPublis
   const { locale } = useT();
   const fr = locale === "fr";
   const [file, setFile] = useState<File | null>(null);
+  const [isVideo, setIsVideo] = useState(false);
+  const [tooLong, setTooLong] = useState(false);
   const [preview, setPreview] = useState<string | null>(null);
   const [caption, setCaption] = useState("");
   const [places, setPlaces] = useState<NearbyPlace[]>([]);
@@ -269,11 +299,11 @@ function StoryComposer({ onClose, onPublished }: { onClose: () => void; onPublis
   }, []);
 
   async function publish() {
-    if (!profile || !file) return;
+    if (!profile || !file || tooLong) return;
     setBusy(true);
     try {
       const url = await uploadMedia(file, profile.id);
-      await publishStory(profile.id, url, caption.trim() || null, placeId);
+      await publishStory(profile.id, url, caption.trim() || null, placeId, isVideo ? "video" : "image");
       onPublished();
     } finally {
       setBusy(false);
@@ -285,20 +315,39 @@ function StoryComposer({ onClose, onPublished }: { onClose: () => void; onPublis
       <input
         ref={fileRef}
         type="file"
-        accept="image/*"
+        accept="image/*,video/*"
         capture="environment"
         className="hidden"
         onChange={(e) => {
           const f = e.target.files?.[0] ?? null;
           setFile(f);
+          setIsVideo(!!f && f.type.startsWith("video/"));
+          setTooLong(false);
           setPreview(f ? URL.createObjectURL(f) : null);
           if (!f) onClose();
         }}
       />
       {preview ? (
         <>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={preview} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          {isVideo ? (
+            <video
+              src={preview}
+              autoPlay
+              muted
+              loop
+              playsInline
+              onLoadedMetadata={(e) => setTooLong(e.currentTarget.duration > 60)}
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={preview} alt="" className="absolute inset-0 h-full w-full object-cover" />
+          )}
+          {tooLong && (
+            <p className="glass absolute left-1/2 top-16 z-20 -translate-x-1/2 whitespace-nowrap rounded-2xl px-4 py-2 text-sm font-bold text-brand-2">
+              {fr ? "Max 60 secondes 🎬" : "Max 60 seconds 🎬"}
+            </p>
+          )}
           <div className="absolute inset-x-0 bottom-0 h-56" style={{ background: "var(--scrim)" }} />
           <button onClick={onClose} className="relative z-10 self-end px-4 pt-[max(14px,env(safe-area-inset-top))] text-2xl text-white">
             ✕
@@ -333,7 +382,7 @@ function StoryComposer({ onClose, onPublished }: { onClose: () => void; onPublis
               />
               <button
                 onClick={publish}
-                disabled={busy}
+                disabled={busy || tooLong}
                 className="glow-cta brand-gradient pressable shrink-0 rounded-full px-5 py-3 font-display text-sm font-bold text-white disabled:opacity-60"
               >
                 {busy ? "…" : fr ? "Publier" : "Share"}

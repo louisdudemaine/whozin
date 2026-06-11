@@ -62,15 +62,26 @@ export function PostCard({ post }: { post: Post }) {
         <button
           onDoubleClick={() => !liked && onLike()}
           className="relative block w-full"
-          aria-label="post image"
+          aria-label="post media"
         >
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={post.photo_url}
-            alt={post.body ?? ""}
-            className="aspect-[4/3] w-full bg-surface-2 object-cover"
-            loading="lazy"
-          />
+          {post.media_type === "video" ? (
+            <video
+              src={post.photo_url}
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="aspect-[4/3] w-full bg-surface-2 object-cover"
+            />
+          ) : (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={post.photo_url}
+              alt={post.body ?? ""}
+              className="aspect-[4/3] w-full bg-surface-2 object-cover"
+              loading="lazy"
+            />
+          )}
           {post.place && cat && (
             <span
               className="absolute bottom-2 left-2 flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold text-white backdrop-blur-md"

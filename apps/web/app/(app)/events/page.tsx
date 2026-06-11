@@ -21,6 +21,7 @@ const CHIPS: { key: Filter; emoji: string; fr: string; en: string }[] = [
   { key: "all", emoji: "✨", fr: "Tous", en: "All" },
   { key: "music", emoji: "🎶", fr: "Musique", en: "Music" },
   { key: "comedy", emoji: "🎤", fr: "Humour", en: "Comedy" },
+  { key: "pro", emoji: "💼", fr: "Réseautage", en: "Networking" },
   { key: "sports", emoji: "🏟️", fr: "Sports", en: "Sports" },
   { key: "arts", emoji: "🎭", fr: "Arts", en: "Arts" },
 ];

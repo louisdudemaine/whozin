@@ -103,15 +103,19 @@ export function CreateModal({
         <input
           ref={fileRef}
           type="file"
-          accept="image/*"
+          accept="image/*,video/*"
           capture="environment"
           className="hidden"
           onChange={(e) => pickFile(e.target.files?.[0] ?? null)}
         />
         {preview ? (
           <div className="relative mt-3">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={preview} alt="" className="max-h-64 w-full rounded-xl object-cover" />
+            {file?.type.startsWith("video/") ? (
+              <video src={preview} autoPlay muted loop playsInline className="max-h-64 w-full rounded-xl object-cover" />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={preview} alt="" className="max-h-64 w-full rounded-xl object-cover" />
+            )}
             <button
               onClick={() => pickFile(null)}
               className="absolute right-2 top-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/60 text-white"

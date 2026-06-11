@@ -193,7 +193,8 @@ export async function createPost(
   visibility: "public" | "friends" | "private",
   lat: number | null,
   lng: number | null,
-  photoUrl: string | null
+  photoUrl: string | null,
+  mediaType: "image" | "video" = "image"
 ): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.from("posts").insert({
@@ -204,6 +205,7 @@ export async function createPost(
     lat,
     lng,
     photo_url: photoUrl,
+    media_type: mediaType,
   });
   if (error) throw error;
 }
@@ -373,7 +375,12 @@ export async function unfollow(followerId: string, followingId: string): Promise
 
 export async function updateProfile(
   id: string,
-  patch: Partial<Pick<Profile, "display_name" | "bio" | "avatar_url" | "username">>
+  patch: Partial<
+    Pick<
+      Profile,
+      "display_name" | "bio" | "avatar_url" | "username" | "pro_mode" | "pro_title" | "pro_company" | "pro_linkedin"
+    >
+  >
 ): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.from("profiles").update(patch).eq("id", id);
@@ -869,11 +876,13 @@ export async function publishStory(
   meId: string,
   mediaUrl: string,
   caption: string | null,
-  placeId: string | null
+  placeId: string | null,
+  mediaType: "image" | "video" = "image"
 ): Promise<void> {
   const { error } = await getSupabase().from("stories").insert({
     user_id: meId,
     media_url: mediaUrl,
+    media_type: mediaType,
     caption: caption || null,
     place_id: placeId,
   });

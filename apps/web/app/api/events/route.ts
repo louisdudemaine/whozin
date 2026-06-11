@@ -9,7 +9,7 @@ import { NextRequest, NextResponse } from "next/server";
 export interface WhozinEvent {
   id: string;
   name: string;
-  segment: "music" | "comedy" | "sports" | "arts" | "other";
+  segment: "music" | "comedy" | "sports" | "arts" | "pro" | "other";
   date: string; // ISO
   venue: string;
   city: string;
