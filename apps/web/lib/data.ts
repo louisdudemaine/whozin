@@ -10,6 +10,7 @@ import type {
   DatingProfile,
   Message,
   NearbyPlace,
+  Place,
   Post,
   Profile,
 } from "@whosin/shared";
@@ -388,6 +389,96 @@ export async function updateLocationSharing(
     .update({ location_sharing: value })
     .eq("id", meId);
   if (error) throw error;
+}
+
+// ----- Portail partenaire 🏪 -----
+
+export interface PartnerPlace {
+  place_id: string;
+  business_name: string | null;
+  place?: Place;
+}
+
+export async function fetchMyPartnerPlace(meId: string): Promise<PartnerPlace | null> {
+  const { data } = await getSupabase()
+    .from("place_partners")
+    .select("place_id,business_name,place:places(*)")
+    .eq("user_id", meId)
+    .maybeSingle();
+  return (data as unknown as PartnerPlace) ?? null;
+}
+
+export async function claimPlace(meId: string, placeId: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from("place_partners")
+    .insert({ place_id: placeId, user_id: meId });
+  if (error) throw error;
+}
+
+export interface PartnerStats {
+  active_now: number;
+  checkins_30d: number;
+  uniques_30d: number;
+  peak_hour: number | null;
+}
+
+export async function fetchPartnerStats(placeId: string): Promise<PartnerStats | null> {
+  const { data } = await getSupabase().rpc("partner_place_stats", { p_place: placeId });
+  const r = (data as PartnerStats[] | null)?.[0];
+  return r
+    ? {
+        active_now: Number(r.active_now),
+        checkins_30d: Number(r.checkins_30d),
+        uniques_30d: Number(r.uniques_30d),
+        peak_hour: r.peak_hour,
+      }
+    : null;
+}
+
+export interface PartnerEvent {
+  id: string;
+  place_id: string;
+  title: string;
+  description: string | null;
+  segment: string;
+  starts_at: string;
+  price_min: number | null;
+  ticket_url: string | null;
+  place?: Place;
+}
+
+export async function createPartnerEvent(
+  meId: string,
+  placeId: string,
+  ev: { title: string; description?: string; segment: string; starts_at: string; price_min?: number | null; ticket_url?: string | null }
+): Promise<void> {
+  const { error } = await getSupabase().from("partner_events").insert({
+    place_id: placeId,
+    creator_id: meId,
+    title: ev.title,
+    description: ev.description || null,
+    segment: ev.segment,
+    starts_at: ev.starts_at,
+    price_min: ev.price_min ?? null,
+    ticket_url: ev.ticket_url || null,
+  });
+  if (error) throw error;
+}
+
+export async function fetchPartnerEvents(placeId?: string): Promise<PartnerEvent[]> {
+  let q = getSupabase()
+    .from("partner_events")
+    .select("*, place:places(*)")
+    .gt("starts_at", new Date(Date.now() - 6 * 3600 * 1000).toISOString())
+    .order("starts_at", { ascending: true });
+  if (placeId) q = q.eq("place_id", placeId);
+  const { data, error } = await q;
+  if (error) throw error;
+  return (data as unknown as PartnerEvent[]) ?? [];
+}
+
+export async function deletePartnerEvent(eventId: string): Promise<void> {
+  await getSupabase().from("partner_events").delete().eq("id", eventId);
 }
 
 // ----- Drops géolocalisés 🎁 -----

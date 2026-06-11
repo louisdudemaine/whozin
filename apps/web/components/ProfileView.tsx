@@ -105,6 +105,13 @@ export function ProfileView({ profile }: { profile: Profile }) {
               >
                 🎁
               </Link>
+              <Link
+                href="/partner"
+                className="glass rounded-full px-2.5 py-1 text-xs font-bold"
+                aria-label="Portail partenaire"
+              >
+                🏪
+              </Link>
               <button onClick={signOut} className="text-xs text-text-dim">
                 {t.auth.signOut}
               </button>

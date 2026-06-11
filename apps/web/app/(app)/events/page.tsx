@@ -5,7 +5,13 @@ import Link from "next/link";
 import { MONTREAL } from "@whosin/shared";
 import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
+import { fetchPartnerEvents } from "@/lib/data";
 import type { WhozinEvent } from "@/app/api/events/route";
+
+interface MergedEvent extends WhozinEvent {
+  /** événement créé par un partenaire Whozin (vs billetterie externe) */
+  isPartner?: boolean;
+}
 
 type Segment = WhozinEvent["segment"];
 type Filter = "all" | Segment;
@@ -30,7 +36,7 @@ const CAT_TO_SEGMENT: Record<string, Segment> = {
 export default function EventsPage() {
   const { locale } = useT();
   const fr = locale === "fr";
-  const [events, setEvents] = useState<WhozinEvent[]>([]);
+  const [events, setEvents] = useState<MergedEvent[]>([]);
   const [source, setSource] = useState<"demo" | "ticketmaster">("demo");
   const [filter, setFilter] = useState<Filter>("all");
   const [tasteSegments, setTasteSegments] = useState<Set<Segment>>(new Set());
@@ -49,9 +55,25 @@ export default function EventsPage() {
     Promise.all([
       fetch(`/api/events?lat=${center.lat}&lng=${center.lng}`).then((r) => r.json()),
       getSupabase().rpc("my_category_affinity"),
+      fetchPartnerEvents().catch(() => []),
     ])
-      .then(([ev, aff]) => {
-        setEvents(ev.events ?? []);
+      .then(([ev, aff, partnerEvs]) => {
+        // les événements des partenaires Whozin d'abord (badge), puis la billetterie
+        const internal: MergedEvent[] = partnerEvs.map((e) => ({
+          id: `wz-${e.id}`,
+          name: e.title,
+          segment: (e.segment as MergedEvent["segment"]) ?? "other",
+          date: e.starts_at,
+          venue: e.place?.name ?? "",
+          city: "Montréal",
+          image: null,
+          url: e.ticket_url,
+          priceMin: e.price_min != null ? Number(e.price_min) : null,
+          lat: e.place?.lat ?? null,
+          lng: e.place?.lng ?? null,
+          isPartner: true,
+        }));
+        setEvents([...internal, ...(ev.events ?? [])]);
         setSource(ev.source ?? "demo");
         const segs = new Set<Segment>();
         for (const row of (aff.data ?? []) as { category: string; score: number }[]) {
@@ -68,6 +90,9 @@ export default function EventsPage() {
     const list = filter === "all" ? events : events.filter((e) => e.segment === filter);
     // « Pour toi » : les segments qui matchent tes goûts remontent, puis par date
     return [...list].sort((a, b) => {
+      const pa = a.isPartner ? 0 : 1;
+      const pb = b.isPartner ? 0 : 1;
+      if (pa !== pb) return pa - pb;
       const ta = tasteSegments.has(a.segment) ? 0 : 1;
       const tb = tasteSegments.has(b.segment) ? 0 : 1;
       if (ta !== tb) return ta - tb;
@@ -149,8 +174,13 @@ export default function EventsPage() {
                 </div>
               )}
               <div className="p-4">
-                <p className="text-xs font-bold uppercase tracking-wide text-brand-2">
+                <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wide text-brand-2">
                   {fmtDate(e.date)}
+                  {e.isPartner && (
+                    <span className="brand-gradient rounded-full px-2 py-0.5 text-[9px] font-bold normal-case text-white">
+                      Whozin
+                    </span>
+                  )}
                 </p>
                 <h2 className="mt-0.5 text-base font-black leading-snug">{e.name}</h2>
                 <p className="mt-0.5 text-sm text-text-dim">
