@@ -18,7 +18,7 @@ import type { LocationSharing } from "@whosin/shared";
 import { Avatar } from "./Avatar";
 import { PostModal } from "./PostModal";
 import { SafetyMenu } from "./SafetyMenu";
-import { iBlocked } from "@/lib/data";
+import { fetchSeenIrl, iBlocked } from "@/lib/data";
 import { MessageButton } from "./MessageButton";
 
 export function ProfileView({ profile }: { profile: Profile }) {
@@ -35,11 +35,15 @@ export function ProfileView({ profile }: { profile: Profile }) {
   const [busy, setBusy] = useState(false);
   const [openPost, setOpenPost] = useState<Post | null>(null);
   const [blocked, setBlocked] = useState(false);
+  const [seenIrl, setSeenIrl] = useState(false);
 
   useEffect(() => {
     fetchProfileStats(profile.id, me?.id ?? null).then(setStats).catch(() => {});
     fetchUserPosts(profile.id).then(setPosts).catch(() => {});
-    if (me && me.id !== profile.id) iBlocked(me.id, profile.id).then(setBlocked).catch(() => {});
+    if (me && me.id !== profile.id) {
+      iBlocked(me.id, profile.id).then(setBlocked).catch(() => {});
+      fetchSeenIrl(profile.id).then(setSeenIrl).catch(() => {});
+    }
   }, [profile.id, me?.id, me]);
 
   async function toggleFollow() {
@@ -118,7 +122,18 @@ export function ProfileView({ profile }: { profile: Profile }) {
         </div>
 
         <div className="mt-3">
-          <p className="font-bold">{profile.display_name || profile.username}</p>
+          <p className="flex items-center gap-2 font-bold">
+            {profile.display_name || profile.username}
+            {seenIrl && (
+              <span
+                className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                style={{ background: "rgba(22,217,197,.14)", color: "var(--accent)", border: "1px solid rgba(22,217,197,.35)" }}
+                title={locale === "fr" ? "Vous vous êtes croisés en vrai" : "You crossed paths in real life"}
+              >
+                ✓ {locale === "fr" ? "Vu IRL" : "Seen IRL"}
+              </span>
+            )}
+          </p>
           {profile.bio && <p className="mt-0.5 text-sm text-text-dim">{profile.bio}</p>}
         </div>
 

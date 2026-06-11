@@ -5,7 +5,7 @@ import Link from "next/link";
 import { getCategory, timeAgo, type CheckIn, type NearbyPlace } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
-import { checkIn, fetchCheckIns, leaveCheckIn } from "@/lib/data";
+import { checkIn, fetchCheckIns, fetchPlaceMemory, leaveCheckIn, type PlaceMemory } from "@/lib/data";
 import { renderShareCard, shareImage } from "@/lib/sharecard";
 import { Avatar } from "./Avatar";
 import { MessageButton } from "./MessageButton";
@@ -25,6 +25,7 @@ export function CheckInSheet({
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [memory, setMemory] = useState<PlaceMemory | null>(null);
   const cat = getCategory(place.category);
 
   const mine = profile ? list.find((c) => c.user_id === profile.id) : undefined;
@@ -39,6 +40,7 @@ export function CheckInSheet({
   }
   useEffect(() => {
     load();
+    fetchPlaceMemory(place.id).then(setMemory).catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [place.id]);
 
@@ -91,6 +93,24 @@ export function CheckInSheet({
             {place.active_checkins} {t.checkin.peopleHere}
           </span>
         </div>
+
+        {/* souvenir de lieu 📸 */}
+        {memory && (
+          <div className="mx-5 mb-1 flex items-center gap-3 rounded-2xl border border-border bg-surface-2 px-3.5 py-2.5 animate-glow-enter">
+            <span className="text-xl">📸</span>
+            <p className="text-[13px] leading-snug text-text-dim">
+              {locale === "fr" ? "Ta dernière fois ici : " : "Your last time here: "}
+              <b className="text-text">{timeAgo(memory.last_at, locale)}</b>
+              {memory.with_names.length > 0 && (
+                <>
+                  {" "}
+                  {locale === "fr" ? "avec" : "with"}{" "}
+                  <b className="text-accent">{memory.with_names.slice(0, 3).join(", ")}</b>
+                </>
+              )}
+            </p>
+          </div>
+        )}
 
         {/* liste des présents */}
         <div className="flex-1 overflow-y-auto px-5">

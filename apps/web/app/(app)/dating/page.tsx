@@ -142,8 +142,16 @@ export default function DatingPage() {
                 <Avatar profile={{ username: current.username, display_name: current.display_name, avatar_url: current.avatar_url }} size={140} />
               </div>
               <div className="p-5">
-                <p className="text-xl font-black">
+                <p className="flex items-center gap-2 text-xl font-black">
                   {current.display_name || current.username}
+                  {current.crossed_place && (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                      style={{ background: "rgba(22,217,197,.14)", color: "var(--accent)", border: "1px solid rgba(22,217,197,.35)" }}
+                    >
+                      ✓ {locale === "fr" ? "Vu IRL" : "Seen IRL"}
+                    </span>
+                  )}
                 </p>
                 {current.vibe && <p className="mt-1 text-sm text-brand-2">“{current.vibe}”</p>}
                 {current.bio && <p className="mt-2 text-sm text-text-dim">{current.bio}</p>}

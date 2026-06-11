@@ -388,6 +388,26 @@ export async function updateLocationSharing(
   if (error) throw error;
 }
 
+// ----- Vu IRL ✓ + Memories 📸 -----
+
+/** Co-présence vérifiée (n'importe quand) entre moi et `other`. */
+export async function fetchSeenIrl(otherId: string): Promise<boolean> {
+  const { data } = await getSupabase().rpc("seen_irl", { other: otherId });
+  return !!data;
+}
+
+export interface PlaceMemory {
+  last_at: string;
+  with_names: string[];
+}
+
+/** Ma dernière fois à ce lieu (>12 h) + amis co-présents ce soir-là. */
+export async function fetchPlaceMemory(placeId: string): Promise<PlaceMemory | null> {
+  const { data } = await getSupabase().rpc("place_memory", { p_place: placeId });
+  const row = (data as PlaceMemory[] | null)?.[0];
+  return row?.last_at ? row : null;
+}
+
 // ----- Mode Balise 🔦 -----
 
 export interface ActiveBeacon {
