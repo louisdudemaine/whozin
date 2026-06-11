@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { CallProvider } from "@/lib/calls";
 import { CallOverlay } from "@/components/CallOverlay";
+import { MfaChallenge } from "@/components/MfaChallenge";
 import { PushBanner } from "@/components/PushBanner";
 import { getSupabase } from "@/lib/supabase";
 import { BottomNav } from "@/components/BottomNav";
@@ -16,8 +17,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const { session, loading } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  // barrière 2FA : 'checking' -> 'ok' | 'required'
+  const [mfa, setMfa] = useState<"checking" | "ok" | "required">("checking");
 
   const userId = session?.user?.id;
+
+  useEffect(() => {
+    if (!userId) {
+      setMfa("checking");
+      return;
+    }
+    getSupabase()
+      .auth.mfa.getAuthenticatorAssuranceLevel()
+      .then(({ data }) => {
+        if (data && data.nextLevel === "aal2" && data.currentLevel !== "aal2") setMfa("required");
+        else setMfa("ok");
+      })
+      .catch(() => setMfa("ok"));
+  }, [userId]);
   const path = usePathname();
   // un fil de conversation est plein écran (pas de tab bar, comme Instagram)
   const isThread = /^\/messages\/[^/]+$/.test(path);
@@ -60,6 +77,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   }
 
   if (!session) return <AuthScreen />;
+  if (mfa === "required") return <MfaChallenge onDone={() => setMfa("ok")} />;
 
   return (
     <CallProvider>

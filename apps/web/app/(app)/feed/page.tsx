@@ -13,6 +13,7 @@ import { CheckInSheet } from "@/components/CheckInSheet";
 import { StoriesBar } from "@/components/Stories";
 import { NearbyStrip } from "@/components/NearbyStrip";
 import { BeaconStrip } from "@/components/BeaconStrip";
+import { TravelPill } from "@/components/TravelPill";
 
 export default function FeedPage() {
   const { t, locale } = useT();
@@ -66,10 +67,7 @@ export default function FeedPage() {
             Whoz<span className="text-gradient neon-text">in</span>
           </span>
           <div className="flex items-center gap-3.5">
-            <span className="glass flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-bold">
-              <span className="live-dot" style={{ width: 6, height: 6 }} />
-              MTL
-            </span>
+            <TravelPill />
             <Link href="/dating" aria-label="Rencontres" className="text-xl leading-none">
               💘
             </Link>

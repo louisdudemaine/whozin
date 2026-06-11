@@ -6,6 +6,7 @@ import { MONTREAL, type NearbyPlace } from "@whosin/shared";
 import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
 import { fetchNearby } from "@/lib/data";
+import { getTravelCity } from "@/lib/cities";
 import { CheckInSheet } from "@/components/CheckInSheet";
 import { LocationToggle } from "@/components/LocationToggle";
 
@@ -34,9 +35,18 @@ export default function MapPage() {
     }
   }, []);
 
-  // initial load + geoloc
+  // initial load + geoloc (le mode voyage ✈️ prime sur tout)
   useEffect(() => {
-    load(MONTREAL.lat, MONTREAL.lng);
+    const travel = getTravelCity();
+    const start = travel ?? MONTREAL;
+    setCenter(start);
+    load(start.lat, start.lng);
+    if (travel) {
+      setUserLoc(null);
+      setFlyTo({ lat: travel.lat, lng: travel.lng });
+      setTimeout(() => setFlyTo(null), 200);
+      return; // en voyage, on n'écrase pas avec le GPS local
+    }
     if (typeof navigator !== "undefined" && navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
         (pos) => {
@@ -107,7 +117,9 @@ export default function MapPage() {
       {/* recentrer */}
       <button
         onClick={() => {
-          if (userLoc) setFlyTo({ ...userLoc });
+          const travel = getTravelCity();
+          if (travel) setFlyTo({ lat: travel.lat, lng: travel.lng });
+          else if (userLoc) setFlyTo({ ...userLoc });
           else setFlyTo({ ...MONTREAL });
           setTimeout(() => setFlyTo(null), 100);
         }}

@@ -123,6 +123,13 @@ export function ProfileView({ profile }: { profile: Profile }) {
               >
                 🏪
               </Link>
+              <Link
+                href="/securite"
+                className="glass rounded-full px-2.5 py-1 text-xs font-bold"
+                aria-label="Sécurité"
+              >
+                🔐
+              </Link>
               <button onClick={signOut} className="text-xs text-text-dim">
                 {t.auth.signOut}
               </button>
