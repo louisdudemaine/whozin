@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { MONTREAL } from "@whosin/shared";
+import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
-import { fetchPartnerEvents } from "@/lib/data";
+import { fetchPartnerEvents, fetchRsvpInfo, rsvpEvent, unRsvpEvent } from "@/lib/data";
 import type { WhozinEvent } from "@/app/api/events/route";
 
 interface MergedEvent extends WhozinEvent {
@@ -35,8 +36,10 @@ const CAT_TO_SEGMENT: Record<string, Segment> = {
 
 export default function EventsPage() {
   const { locale } = useT();
+  const { profile } = useAuth();
   const fr = locale === "fr";
   const [events, setEvents] = useState<MergedEvent[]>([]);
+  const [rsvps, setRsvps] = useState<Map<string, { count: number; mine: boolean }>>(new Map());
   const [source, setSource] = useState<"demo" | "ticketmaster">("demo");
   const [filter, setFilter] = useState<Filter>("all");
   const [tasteSegments, setTasteSegments] = useState<Set<Segment>>(new Set());
@@ -75,6 +78,10 @@ export default function EventsPage() {
         }));
         setEvents([...internal, ...(ev.events ?? [])]);
         setSource(ev.source ?? "demo");
+        // RSVP des événements Whozin
+        const ids = partnerEvs.map((e) => e.id);
+        const me = profile?.id;
+        if (ids.length && me) fetchRsvpInfo(ids, me).then(setRsvps).catch(() => {});
         const segs = new Set<Segment>();
         for (const row of (aff.data ?? []) as { category: string; score: number }[]) {
           const s = CAT_TO_SEGMENT[row.category];
@@ -84,7 +91,8 @@ export default function EventsPage() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.id]);
 
   const shown = useMemo(() => {
     const list = filter === "all" ? events : events.filter((e) => e.segment === filter);
@@ -197,7 +205,35 @@ export default function EventsPage() {
                         ? "Gratuit / variable"
                         : "Free / varies"}
                   </span>
-                  {e.url ? (
+                  {e.isPartner && profile ? (
+                    <div className="flex items-center gap-2">
+                      {(rsvps.get(e.id.replace(/^wz-/, ""))?.count ?? 0) > 0 && (
+                        <span className="text-xs font-bold text-accent">
+                          {rsvps.get(e.id.replace(/^wz-/, ""))!.count} {fr ? "y vont" : "going"}
+                        </span>
+                      )}
+                      <button
+                        onClick={async () => {
+                          const realId = e.id.replace(/^wz-/, "");
+                          const cur = rsvps.get(realId);
+                          if (cur?.mine) await unRsvpEvent(realId, profile.id);
+                          else await rsvpEvent(realId, profile.id);
+                          fetchRsvpInfo([realId], profile.id).then((m) =>
+                            setRsvps((prev) => new Map([...prev, ...m]))
+                          );
+                        }}
+                        className={
+                          rsvps.get(e.id.replace(/^wz-/, ""))?.mine
+                            ? "rounded-xl border border-accent px-4 py-2 text-sm font-bold text-accent"
+                            : "glow-cta brand-gradient pressable rounded-xl px-4 py-2 text-sm font-bold text-white"
+                        }
+                      >
+                        {rsvps.get(e.id.replace(/^wz-/, ""))?.mine
+                          ? `✓ ${fr ? "J'y vais" : "Going"}`
+                          : fr ? "J'y vais 🎟️" : "I'm going 🎟️"}
+                      </button>
+                    </div>
+                  ) : e.url ? (
                     <a
                       href={e.url}
                       target="_blank"

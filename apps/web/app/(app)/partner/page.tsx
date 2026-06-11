@@ -13,10 +13,14 @@ import {
   fetchNearby,
   fetchPartnerEvents,
   fetchPartnerStats,
+  fetchPlaceReservations,
+  setReservationStatus,
   type PartnerEvent,
   type PartnerPlace,
   type PartnerStats,
+  type Reservation,
 } from "@/lib/data";
+import { pushNotify } from "@/lib/push";
 
 const SEGMENTS = [
   { key: "music", emoji: "🎶", fr: "Musique", en: "Music" },
@@ -34,6 +38,7 @@ export default function PartnerPage() {
   const [partner, setPartner] = useState<PartnerPlace | null | undefined>(undefined);
   const [stats, setStats] = useState<PartnerStats | null>(null);
   const [events, setEvents] = useState<PartnerEvent[]>([]);
+  const [resas, setResas] = useState<Reservation[]>([]);
   const [places, setPlaces] = useState<NearbyPlace[]>([]);
   const [busy, setBusy] = useState(false);
 
@@ -51,6 +56,7 @@ export default function PartnerPage() {
     if (p) {
       fetchPartnerStats(p.place_id).then(setStats).catch(() => {});
       fetchPartnerEvents(p.place_id).then(setEvents).catch(() => {});
+      fetchPlaceReservations(p.place_id).then(setResas).catch(() => {});
     } else {
       fetchNearby(MONTREAL.lat, MONTREAL.lng).then(setPlaces).catch(() => {});
     }
@@ -157,6 +163,81 @@ export default function PartnerPage() {
               <Stat n={stats?.peak_hour != null ? `${stats.peak_hour} h` : "—"} label={fr ? "heure de pointe" : "peak hour"} />
             </div>
           </div>
+
+          {/* réservations 🍽️ */}
+          {resas.length > 0 && (
+            <div className="rounded-3xl border border-border bg-surface p-4">
+              <p className="font-display text-base font-bold">🍽️ {fr ? "Réservations" : "Reservations"}</p>
+              <div className="mt-3 flex flex-col gap-2.5">
+                {resas.map((r) => (
+                  <div key={r.id} className="rounded-xl bg-surface-2 px-3 py-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="min-w-0 truncate text-sm font-bold">
+                        {r.client?.display_name || r.client?.username} · {r.party_size} pers.
+                      </p>
+                      <span
+                        className="shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold uppercase"
+                        style={{
+                          background:
+                            r.status === "confirmed" ? "rgba(61,220,132,.15)"
+                            : r.status === "pending" ? "rgba(255,201,77,.15)"
+                            : "rgba(255,46,99,.12)",
+                          color:
+                            r.status === "confirmed" ? "#3ddc84"
+                            : r.status === "pending" ? "var(--gold)"
+                            : "var(--brand)",
+                        }}
+                      >
+                        {r.status === "pending" ? (fr ? "en attente" : "pending")
+                          : r.status === "confirmed" ? (fr ? "confirmée" : "confirmed")
+                          : r.status === "declined" ? (fr ? "refusée" : "declined")
+                          : (fr ? "annulée" : "cancelled")}
+                      </span>
+                    </div>
+                    <p className="mt-0.5 text-xs text-text-dim">
+                      {new Intl.DateTimeFormat(fr ? "fr-CA" : "en-CA", {
+                        weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit",
+                      }).format(new Date(r.reserved_for))}
+                      {r.note ? ` · ${r.note}` : ""}
+                    </p>
+                    {r.status === "pending" && (
+                      <div className="mt-2 flex gap-2">
+                        <button
+                          onClick={async () => {
+                            await setReservationStatus(r.id, "confirmed");
+                            pushNotify(r.user_id, {
+                              title: `✅ ${partner.place?.name}`,
+                              body: fr ? "Ta réservation est confirmée!" : "Your reservation is confirmed!",
+                              url: "/profile", tag: "resa",
+                            });
+                            load();
+                          }}
+                          className="pressable flex-1 rounded-lg py-2 text-xs font-bold text-background"
+                          style={{ background: "#3ddc84" }}
+                        >
+                          ✓ {fr ? "Confirmer" : "Confirm"}
+                        </button>
+                        <button
+                          onClick={async () => {
+                            await setReservationStatus(r.id, "declined");
+                            pushNotify(r.user_id, {
+                              title: `❌ ${partner.place?.name}`,
+                              body: fr ? "Réservation refusée — réessaie un autre créneau." : "Reservation declined — try another time.",
+                              url: "/profile", tag: "resa",
+                            });
+                            load();
+                          }}
+                          className="pressable flex-1 rounded-lg border border-border py-2 text-xs font-semibold text-text-dim"
+                        >
+                          ✕ {fr ? "Refuser" : "Decline"}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* créer un événement */}
           <div className="rounded-3xl border border-border bg-surface p-4">

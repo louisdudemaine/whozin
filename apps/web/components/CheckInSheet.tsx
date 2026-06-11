@@ -8,15 +8,18 @@ import { useT } from "@/lib/locale";
 import {
   checkIn,
   claimDrop,
+  createReservation,
   fetchCheckIns,
   fetchPlaceDrop,
   fetchPlaceForecast,
   fetchPlaceMemory,
+  fetchPlacePartnerUser,
   leaveCheckIn,
   type PlaceDrop,
   type PlaceForecast,
   type PlaceMemory,
 } from "@/lib/data";
+import { pushNotify } from "@/lib/push";
 import { renderShareCard, shareImage } from "@/lib/sharecard";
 import { findSpotifyLink, SpotifyEmbed } from "@/lib/spotify";
 import { Avatar } from "./Avatar";
@@ -42,7 +45,14 @@ export function CheckInSheet({
   const [forecast, setForecast] = useState<PlaceForecast | null>(null);
   const [drop, setDrop] = useState<PlaceDrop | null>(null);
   const [dropToast, setDropToast] = useState<string | null>(null);
+  // réservation 🍽️
+  const [booking, setBooking] = useState(false);
+  const [bookWhen, setBookWhen] = useState("");
+  const [bookSize, setBookSize] = useState(2);
+  const [bookNote, setBookNote] = useState("");
+  const [bookDone, setBookDone] = useState(false);
   const cat = getCategory(place.category);
+  const bookable = place.category === "restaurant" || place.category === "cafe";
 
   const mine = profile ? list.find((c) => c.user_id === profile.id) : undefined;
 
@@ -85,6 +95,33 @@ export function CheckInSheet({
 
   // « ce qui joue ici » : le lien Spotify le plus récent parmi les présents
   const nowPlaying = list.find((c) => c.spotify_url)?.spotify_url ?? null;
+
+  async function doBook() {
+    if (!profile || !bookWhen) return;
+    setBusy(true);
+    try {
+      await createReservation(profile.id, place.id, new Date(bookWhen).toISOString(), bookSize, bookNote.trim() || null);
+      // push au restaurateur s'il gère son lieu sur Whozin
+      const partnerId = await fetchPlacePartnerUser(place.id);
+      if (partnerId) {
+        pushNotify(partnerId, {
+          title: `🍽️ ${place.name}`,
+          body: `${profile.display_name || profile.username} · ${bookSize} pers. · ${new Intl.DateTimeFormat(locale === "fr" ? "fr-CA" : "en-CA", { weekday: "short", hour: "numeric", minute: "2-digit" }).format(new Date(bookWhen))}`,
+          url: "/partner",
+          tag: "resa",
+        });
+      }
+      setBookDone(true);
+      setTimeout(() => {
+        setBooking(false);
+        setBookDone(false);
+        setBookWhen("");
+        setBookNote("");
+      }, 2200);
+    } finally {
+      setBusy(false);
+    }
+  }
 
   async function doLeave() {
     if (!mine) return;
@@ -244,6 +281,15 @@ export function CheckInSheet({
 
         {/* action check-in */}
         <div className="border-t border-border p-4 pb-[max(16px,env(safe-area-inset-bottom))]">
+          {bookable && (
+            <button
+              onClick={() => setBooking(true)}
+              className="pressable mb-2.5 flex w-full items-center justify-center gap-2 rounded-xl border py-3 text-sm font-bold"
+              style={{ borderColor: cat.color + "66", color: cat.color, background: cat.color + "14" }}
+            >
+              🍽️ {locale === "fr" ? "Réserver une table" : "Book a table"}
+            </button>
+          )}
           {mine ? (
             <div className="flex gap-2">
               <button
@@ -294,6 +340,68 @@ export function CheckInSheet({
           )}
         </div>
       </div>
+
+      {/* sous-panneau réservation 🍽️ */}
+      {booking && (
+        <div className="fixed inset-0 z-[90] flex items-end justify-center">
+          <div className="absolute inset-0 bg-black/60 animate-fade" onClick={() => setBooking(false)} />
+          <div className="relative w-full max-w-[480px] rounded-t-3xl border-t border-border bg-surface p-5 pb-[max(20px,env(safe-area-inset-bottom))] animate-slide-up">
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
+            {bookDone ? (
+              <div className="py-8 text-center">
+                <p className="text-4xl">✅</p>
+                <p className="font-display mt-2 text-lg font-bold">
+                  {locale === "fr" ? "Demande envoyée!" : "Request sent!"}
+                </p>
+                <p className="mt-1 text-sm text-text-dim">
+                  {locale === "fr" ? "Tu recevras une notification à la confirmation." : "You'll get notified on confirmation."}
+                </p>
+              </div>
+            ) : (
+              <>
+                <h2 className="font-display text-lg font-bold">🍽️ {place.name}</h2>
+                <input
+                  type="datetime-local"
+                  value={bookWhen}
+                  onChange={(e) => setBookWhen(e.target.value)}
+                  className="mt-3 w-full rounded-xl border border-border bg-surface-2 px-3 py-3 text-sm outline-none focus:border-brand"
+                  style={{ colorScheme: "dark" }}
+                />
+                <div className="mt-3 flex items-center gap-2">
+                  <span className="text-sm text-text-dim">{locale === "fr" ? "Pour" : "For"}</span>
+                  {[2, 4, 6, 8].map((n) => (
+                    <button
+                      key={n}
+                      onClick={() => setBookSize(n)}
+                      className="h-10 w-10 rounded-full border text-sm font-bold"
+                      style={{
+                        borderColor: bookSize === n ? "var(--accent)" : "var(--border)",
+                        color: bookSize === n ? "var(--accent)" : "var(--text-dim)",
+                      }}
+                    >
+                      {n}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  value={bookNote}
+                  onChange={(e) => setBookNote(e.target.value)}
+                  maxLength={200}
+                  placeholder={locale === "fr" ? "Note (allergies, terrasse…)" : "Note (allergies, patio…)"}
+                  className="mt-3 w-full rounded-xl border border-border bg-surface-2 px-3 py-3 text-sm outline-none focus:border-brand"
+                />
+                <button
+                  onClick={doBook}
+                  disabled={busy || !bookWhen}
+                  className="glow-cta brand-gradient pressable mt-4 w-full rounded-full py-3.5 font-display text-sm font-bold text-white disabled:opacity-50"
+                >
+                  {busy ? "…" : locale === "fr" ? "Envoyer la demande" : "Send request"}
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

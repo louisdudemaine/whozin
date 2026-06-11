@@ -391,6 +391,109 @@ export async function updateLocationSharing(
   if (error) throw error;
 }
 
+// ----- Réservations resto 🍽️ -----
+
+export interface Reservation {
+  id: string;
+  place_id: string;
+  user_id: string;
+  party_size: number;
+  reserved_for: string;
+  note: string | null;
+  status: "pending" | "confirmed" | "declined" | "cancelled";
+  created_at: string;
+  place?: Place;
+  client?: Profile;
+}
+
+export async function createReservation(
+  meId: string,
+  placeId: string,
+  reservedFor: string,
+  partySize: number,
+  note: string | null
+): Promise<string> {
+  const { data, error } = await getSupabase()
+    .from("reservations")
+    .insert({ place_id: placeId, user_id: meId, reserved_for: reservedFor, party_size: partySize, note })
+    .select("id")
+    .single();
+  if (error) throw error;
+  return (data as { id: string }).id;
+}
+
+export async function fetchMyReservations(meId: string): Promise<Reservation[]> {
+  const { data } = await getSupabase()
+    .from("reservations")
+    .select("*, place:places(*)")
+    .eq("user_id", meId)
+    .gt("reserved_for", new Date(Date.now() - 12 * 3600 * 1000).toISOString())
+    .order("reserved_for", { ascending: true });
+  return (data as unknown as Reservation[]) ?? [];
+}
+
+/** Réservations du lieu (vue partenaire). */
+export async function fetchPlaceReservations(placeId: string): Promise<Reservation[]> {
+  const { data } = await getSupabase()
+    .from("reservations")
+    .select(`*, client:profiles!reservations_user_id_fkey(${PROFILE_COLS})`)
+    .eq("place_id", placeId)
+    .gt("reserved_for", new Date(Date.now() - 12 * 3600 * 1000).toISOString())
+    .order("reserved_for", { ascending: true });
+  return (data as unknown as Reservation[]) ?? [];
+}
+
+export async function setReservationStatus(
+  id: string,
+  status: "confirmed" | "declined" | "cancelled"
+): Promise<void> {
+  const { error } = await getSupabase().from("reservations").update({ status }).eq("id", id);
+  if (error) throw error;
+}
+
+/** Le partenaire (gestionnaire) d'un lieu, s'il existe — pour les push. */
+export async function fetchPlacePartnerUser(placeId: string): Promise<string | null> {
+  const { data } = await getSupabase()
+    .from("place_partners")
+    .select("user_id")
+    .eq("place_id", placeId)
+    .maybeSingle();
+  return (data as { user_id: string } | null)?.user_id ?? null;
+}
+
+// ----- RSVP événements 🎟️ -----
+
+export async function rsvpEvent(eventId: string, meId: string, party = 1): Promise<void> {
+  const { error } = await getSupabase()
+    .from("event_rsvps")
+    .insert({ event_id: eventId, user_id: meId, party_size: party });
+  if (error && !`${error.code}`.startsWith("23")) throw error;
+}
+
+export async function unRsvpEvent(eventId: string, meId: string): Promise<void> {
+  await getSupabase().from("event_rsvps").delete().eq("event_id", eventId).eq("user_id", meId);
+}
+
+/** Compte des RSVP + si j'y vais, pour une liste d'événements. */
+export async function fetchRsvpInfo(
+  eventIds: string[],
+  meId: string
+): Promise<Map<string, { count: number; mine: boolean }>> {
+  const out = new Map<string, { count: number; mine: boolean }>();
+  if (eventIds.length === 0) return out;
+  const { data } = await getSupabase()
+    .from("event_rsvps")
+    .select("event_id,user_id,party_size")
+    .in("event_id", eventIds);
+  for (const r of (data ?? []) as { event_id: string; user_id: string; party_size: number }[]) {
+    const e = out.get(r.event_id) ?? { count: 0, mine: false };
+    e.count += r.party_size;
+    if (r.user_id === meId) e.mine = true;
+    out.set(r.event_id, e);
+  }
+  return out;
+}
+
 // ----- Portail partenaire 🏪 -----
 
 export interface PartnerPlace {
