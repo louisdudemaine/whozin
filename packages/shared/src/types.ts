@@ -163,6 +163,15 @@ export interface DatingCandidate {
   crossed_at?: string | null;
 }
 
+/** 📈 Sismographe d'ambiance — renvoyé par le RPC city_pulse */
+export interface CityPulse {
+  series: { h: string; n: number }[];
+  live_now: number;
+  magnitude: number;
+  top_category: string | null;
+  top_category_n: number;
+}
+
 /** 🌅 Recap du lendemain — renvoyé par le RPC night_recap */
 export interface NightRecap {
   night_start: string;

@@ -2,6 +2,7 @@
 
 import type {
   AppNotification,
+  CityPulse,
   CheckIn,
   Comment,
   Conversation,
@@ -1138,4 +1139,12 @@ export async function fetchNightRecap(): Promise<NightRecap | null> {
   const { data, error } = await getSupabase().rpc("night_recap");
   if (error) return null;
   return (data ?? null) as NightRecap | null;
+}
+
+// ===== 📈 Sismographe d'ambiance =====
+
+export async function fetchCityPulse(): Promise<CityPulse | null> {
+  const { data, error } = await getSupabase().rpc("city_pulse");
+  if (error) return null;
+  return (data ?? null) as CityPulse | null;
 }
