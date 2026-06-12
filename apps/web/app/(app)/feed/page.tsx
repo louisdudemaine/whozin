@@ -41,8 +41,9 @@ export default function FeedPage() {
 
   useEffect(() => {
     load();
-    // 🌅 le matin, la nuit d'hier remonte à la surface
-    if (new Date().getHours() < 14) {
+    // 🌅 le matin = recap d'hier · 🌙 le soir (17h+) = retrace tes pas en direct
+    const h = new Date().getHours();
+    if (h < 14 || h >= 17) {
       fetchNightRecap().then((r) => setRecapStops(r?.stops.length ?? 0));
     }
     const onRefresh = () => load();
@@ -124,7 +125,9 @@ export default function FeedPage() {
               style={{ "--glow": "rgba(255,201,77,.45)", "--int": 0.65 } as React.CSSProperties}
             >
               <span className="flex items-center gap-2 text-sm font-bold">
-                🌅 {locale === "fr" ? "Ton recap d'hier soir est prêt" : "Last night's recap is ready"}
+                {new Date().getHours() >= 17
+                  ? `🌙 ${locale === "fr" ? `Ta soirée jusqu'ici — ${recapStops} spot${recapStops > 1 ? "s" : ""}` : `Your night so far — ${recapStops} spot${recapStops > 1 ? "s" : ""}`}`
+                  : `🌅 ${locale === "fr" ? "Ton recap d'hier soir est prêt" : "Last night's recap is ready"}`}
               </span>
               <span className="text-text-dim">→</span>
             </Link>

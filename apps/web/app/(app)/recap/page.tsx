@@ -67,12 +67,22 @@ export default function RecapPage() {
   }
 
   const hasNight = (recap?.stops.length ?? 0) > 0;
+  // 🌙 17h+ : la fenêtre du RPC couvre la soirée EN COURS -> mode « retrace tes pas »
+  const live = new Date().getHours() >= 17;
 
   return (
     <div className="min-h-[100dvh]">
       <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-[rgba(7,7,13,0.72)] px-4 py-3 backdrop-blur-xl pt-[max(12px,env(safe-area-inset-top))]">
         <Link href="/feed" className="text-text-dim">←</Link>
-        <h1 className="font-display text-xl font-extrabold">🌅 {fr ? "Ton recap" : "Your recap"}</h1>
+        <h1 className="flex-1 font-display text-xl font-extrabold">
+          {live ? `🌙 ${fr ? "Ce soir" : "Tonight"}` : `🌅 ${fr ? "Ton recap" : "Your recap"}`}
+        </h1>
+        {live && hasNight && (
+          <span className="flex items-center gap-1.5 text-[11px] font-bold text-accent">
+            <span className="live-dot" style={{ width: 6, height: 6 }} />
+            {fr ? "EN DIRECT" : "LIVE"}
+          </span>
+        )}
       </header>
 
       {loading ? (
@@ -81,12 +91,18 @@ export default function RecapPage() {
         <div className="px-6 py-16 text-center">
           <p className="text-5xl">🌙</p>
           <h2 className="mt-3 font-display text-xl font-extrabold">
-            {fr ? "Pas de traces hier soir" : "No traces last night"}
+            {live
+              ? fr ? "Pas encore de traces ce soir" : "No traces yet tonight"
+              : fr ? "Pas de traces hier soir" : "No traces last night"}
           </h2>
           <p className="mx-auto mt-2 max-w-xs text-sm text-text-dim">
-            {fr
-              ? "Check-in ce soir et demain matin ta nuit sera racontée ici."
-              : "Check in tonight and tomorrow morning your night will be told here."}
+            {live
+              ? fr
+                ? "Check-in quelque part et retrace tes pas ici, en direct."
+                : "Check in somewhere and retrace your steps here, live."
+              : fr
+                ? "Check-in ce soir et demain matin ta nuit sera racontée ici."
+                : "Check in tonight and tomorrow morning your night will be told here."}
           </p>
           <Link
             href="/map"
@@ -103,7 +119,7 @@ export default function RecapPage() {
             style={{ "--glow": "var(--glow-gold, rgba(255,201,77,.45))", "--int": 0.7 } as React.CSSProperties}
           >
             <p className="text-[11px] font-bold uppercase tracking-[0.18em]" style={{ color: "var(--gold)" }}>
-              {fr ? "Hier soir" : "Last night"}
+              {live ? (fr ? "Ta soirée jusqu'ici" : "Your night so far") : fr ? "Hier soir" : "Last night"}
             </p>
             <p className="mt-1.5 font-display text-lg font-bold leading-snug">
               {narration ?? "…"}
