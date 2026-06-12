@@ -208,12 +208,45 @@ export function ProfileView({ profile }: { profile: Profile }) {
         </div>
 
         {isMe ? (
-          <button
-            onClick={() => setEditing(true)}
-            className="mt-4 w-full rounded-xl border border-border py-2.5 text-sm font-semibold"
-          >
-            {t.profile.editProfile}
-          </button>
+          <>
+            {/* 🎉↔💼 switch de version : social ou réseautage pro, en un tap */}
+            <div className="mt-4 grid grid-cols-2 gap-1 rounded-2xl border border-border bg-surface-2 p-1">
+              {([
+                { pro: false, label: locale === "fr" ? "🎉 Social" : "🎉 Social" },
+                { pro: true, label: locale === "fr" ? "💼 Pro" : "💼 Pro" },
+              ] as const).map((m) => (
+                <button
+                  key={String(m.pro)}
+                  onClick={async () => {
+                    if (proMode === m.pro) return;
+                    setProMode(m.pro);
+                    try {
+                      await updateProfile(profile.id, { pro_mode: m.pro });
+                      await refreshProfile();
+                    } catch {
+                      setProMode(!m.pro);
+                    }
+                  }}
+                  className="rounded-xl py-2 text-sm font-bold transition-colors"
+                  style={
+                    proMode === m.pro
+                      ? m.pro
+                        ? { background: "rgba(77,159,255,.18)", color: "#4d9fff" }
+                        : { background: "rgba(255,46,99,.15)", color: "var(--brand)" }
+                      : { color: "var(--text-dim)" }
+                  }
+                >
+                  {m.label}
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setEditing(true)}
+              className="mt-2 w-full rounded-xl border border-border py-2.5 text-sm font-semibold"
+            >
+              {t.profile.editProfile}
+            </button>
+          </>
         ) : (
           me && blocked ? (
             <p className="mt-4 rounded-2xl border border-border px-4 py-3 text-center text-sm text-text-dim">

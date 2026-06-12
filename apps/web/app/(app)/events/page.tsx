@@ -46,6 +46,11 @@ export default function EventsPage() {
   const [tasteSegments, setTasteSegments] = useState<Set<Segment>>(new Set());
   const [loading, setLoading] = useState(true);
 
+  // 💼 en mode Pro, la page ouvre sur le réseautage
+  useEffect(() => {
+    if (profile?.pro_mode) setFilter("pro");
+  }, [profile?.pro_mode]);
+
   useEffect(() => {
     const center = (() => {
       try {
