@@ -1197,3 +1197,21 @@ export async function fetchMyProteges(): Promise<Protege[]> {
   if (error) return [];
   return (data ?? []) as Protege[];
 }
+
+// ===== 👯 Crew auto-détecté =====
+
+export interface CrewMate {
+  user_id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  outings: number;
+  top_place: string | null;
+  last_at: string | null;
+}
+
+export async function fetchMyCrew(): Promise<CrewMate[]> {
+  const { data, error } = await getSupabase().rpc("my_crew");
+  if (error) return [];
+  return (data ?? []) as CrewMate[];
+}

@@ -18,7 +18,7 @@ import type { LocationSharing } from "@whosin/shared";
 import { Avatar } from "./Avatar";
 import { PostModal } from "./PostModal";
 import { SafetyMenu } from "./SafetyMenu";
-import { fetchMyDrops, fetchSeenIrl, iBlocked, type MyDrop } from "@/lib/data";
+import { fetchMyCrew, fetchMyDrops, fetchSeenIrl, iBlocked, type CrewMate, type MyDrop } from "@/lib/data";
 
 /** skins d'anneau gagnés via drops */
 const RING_SKINS: Record<string, string> = {
@@ -46,9 +46,13 @@ export function ProfileView({ profile }: { profile: Profile }) {
   const [blocked, setBlocked] = useState(false);
   const [seenIrl, setSeenIrl] = useState(false);
   const [myDrops, setMyDrops] = useState<MyDrop[]>([]);
+  const [crew, setCrew] = useState<CrewMate[]>([]);
 
   useEffect(() => {
-    if (isMe) fetchMyDrops().then(setMyDrops).catch(() => {});
+    if (isMe) {
+      fetchMyDrops().then(setMyDrops).catch(() => {});
+      fetchMyCrew().then(setCrew).catch(() => {});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMe]);
 
@@ -235,6 +239,42 @@ export function ProfileView({ profile }: { profile: Profile }) {
           )
         ))}
       </div>
+
+      {isMe && crew.length > 0 && (
+        <div className="border-t border-border px-5 py-3">
+          <p className="mb-2 text-[11px] font-bold uppercase tracking-[0.14em] text-text-dim">
+            👯 {locale === "fr" ? "Ton crew" : "Your crew"}
+            <span className="ml-1.5 normal-case tracking-normal">
+              · {locale === "fr" ? "détecté de tes sorties" : "detected from your nights"}
+            </span>
+          </p>
+          <div className="no-scrollbar flex gap-2.5 overflow-x-auto">
+            {crew.map((c) => (
+              <Link
+                key={c.user_id}
+                href={`/u/${c.username}`}
+                className="glass pressable flex shrink-0 items-center gap-2.5 rounded-2xl py-2 pl-2 pr-3.5"
+              >
+                <span className="ring">
+                  <Avatar
+                    profile={{ username: c.username, display_name: c.display_name, avatar_url: c.avatar_url }}
+                    size={34}
+                  />
+                </span>
+                <span>
+                  <span className="block text-sm font-bold leading-tight">
+                    {c.display_name || c.username}
+                  </span>
+                  <span className="block text-[10px] text-text-dim">
+                    {c.outings} {locale === "fr" ? "sorties" : "nights"}
+                    {c.top_place ? ` · ${c.top_place}` : ""}
+                  </span>
+                </span>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
 
       {isMe && myDrops.length > 0 && (
         <div className="border-t border-border px-5 py-3">
