@@ -7,7 +7,7 @@ import {
   View,
 } from "react-native";
 import { getSupabase } from "@/lib/supabase";
-import { C } from "@/lib/theme";
+import { useC } from "@/lib/theme";
 
 const DEMO = [
   { email: "aria@whosin.demo", name: "Aria" },
@@ -16,6 +16,7 @@ const DEMO = [
 ];
 
 export function AuthScreen() {
+  const C = useC();
   const supabase = getSupabase();
   const [mode, setMode] = useState<"in" | "up">("in");
   const [email, setEmail] = useState("");
@@ -56,11 +57,17 @@ export function AuthScreen() {
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg, padding: 24, justifyContent: "center" }}>
-      <Text style={{ color: C.text, fontSize: 34, fontWeight: "900", marginBottom: 4 }}>
+      <Text style={{ color: C.text, fontSize: 22, fontWeight: "900", marginBottom: 28 }}>
         Whoz<Text style={{ color: C.brand }}>in</Text>
       </Text>
-      <Text style={{ color: C.textDim, marginBottom: 24 }}>
-        Vois ce qui se passe. Maintenant.
+      <Text style={{ color: C.text, fontSize: 38, fontWeight: "900", lineHeight: 42 }}>
+        La ville s'allume.
+      </Text>
+      <Text style={{ color: C.brand, fontSize: 38, fontWeight: "900", lineHeight: 44, marginBottom: 10 }}>
+        T'es où?
+      </Text>
+      <Text style={{ color: C.textDim, marginBottom: 24, fontSize: 15 }}>
+        Vois qui est sorti, en ce moment, autour de toi.
       </Text>
 
       {mode === "up" && (
@@ -74,7 +81,7 @@ export function AuthScreen() {
       <Pressable
         onPress={submit}
         disabled={busy}
-        style={{ backgroundColor: C.brand, borderRadius: 14, paddingVertical: 14, alignItems: "center" }}
+        style={{ backgroundColor: C.brand, borderRadius: 999, paddingVertical: 15, alignItems: "center", shadowColor: C.brand, shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 0 }, elevation: 8 }}
       >
         {busy ? (
           <ActivityIndicator color="#fff" />
@@ -105,7 +112,7 @@ export function AuthScreen() {
               borderWidth: 1,
               borderColor: C.border,
               backgroundColor: C.surface,
-              borderRadius: 12,
+              borderRadius: 16,
               paddingVertical: 12,
               alignItems: "center",
             }}
@@ -119,6 +126,7 @@ export function AuthScreen() {
 }
 
 function Input(props: React.ComponentProps<typeof TextInput>) {
+  const C = useC();
   return (
     <TextInput
       placeholderTextColor={C.textDim}

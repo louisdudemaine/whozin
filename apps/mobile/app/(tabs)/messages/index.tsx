@@ -15,7 +15,7 @@ import {
   declineConversation,
   fetchConversations,
 } from "@/lib/data";
-import { C } from "@/lib/theme";
+import { useC } from "@/lib/theme";
 
 function avatarUri(p?: { avatar_url?: string | null; username?: string } | null) {
   return (
@@ -25,6 +25,7 @@ function avatarUri(p?: { avatar_url?: string | null; username?: string } | null)
 }
 
 export default function Inbox() {
+  const C = useC();
   const { profile } = useAuth();
   const router = useRouter();
   const [list, setList] = useState<ConversationPreview[]>([]);

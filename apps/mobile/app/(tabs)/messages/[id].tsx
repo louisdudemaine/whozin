@@ -21,9 +21,10 @@ import {
   markConversationRead,
   sendMessage,
 } from "@/lib/data";
-import { C } from "@/lib/theme";
+import { useC } from "@/lib/theme";
 
 export default function Thread() {
+  const C = useC();
   const { id } = useLocalSearchParams<{ id: string }>();
   const convId = String(id);
   const { profile } = useAuth();

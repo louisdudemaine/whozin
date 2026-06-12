@@ -4,9 +4,10 @@ import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { AuthScreen } from "@/components/AuthScreen";
-import { C } from "@/lib/theme";
+import { useC } from "@/lib/theme";
 
 function Gate() {
+  const C = useC();
   const { session, loading } = useAuth();
   if (loading) {
     return (
@@ -20,6 +21,7 @@ function Gate() {
 }
 
 export default function RootLayout() {
+  const C = useC();
   return (
     <SafeAreaProvider>
       <StatusBar style="light" />

@@ -2,9 +2,10 @@ import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { useAuth } from "@/lib/auth";
 import { getSupabase } from "@/lib/supabase";
-import { C } from "@/lib/theme";
+import { useC } from "@/lib/theme";
 
 export default function ProfileTab() {
+  const C = useC();
   const { profile, signOut } = useAuth();
   const [stats, setStats] = useState({ followers: 0, following: 0, checkins: 0 });
 
@@ -54,6 +55,7 @@ export default function ProfileTab() {
 }
 
 function Stat({ n, label }: { n: number; label: string }) {
+  const C = useC();
   return (
     <View>
       <Text style={{ color: C.text, fontSize: 20, fontWeight: "900" }}>{n}</Text>

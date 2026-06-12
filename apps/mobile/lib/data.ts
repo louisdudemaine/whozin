@@ -151,7 +151,7 @@ export async function fetchConversations(meId: string): Promise<ConversationPrev
     const otherId = c.user_a === meId ? c.user_b : c.user_a;
     return {
       id: c.id,
-      other: pById.get(otherId) ?? null,
+      other: (otherId ? pById.get(otherId) : null) ?? null,
       last_message_at: c.last_message_at,
       lastMessage: lastByConv.get(c.id) ?? null,
       unread: unreadByConv.get(c.id) ?? 0,

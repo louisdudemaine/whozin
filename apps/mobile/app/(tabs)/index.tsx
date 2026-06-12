@@ -12,7 +12,7 @@ import { useRouter } from "expo-router";
 import { getCategory, timeAgo, type CheckIn, type Post } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { fetchActiveCheckIns, fetchFeed, toggleLike } from "@/lib/data";
-import { C } from "@/lib/theme";
+import { useC } from "@/lib/theme";
 
 function avatarUri(p?: { avatar_url?: string | null; username?: string } | null) {
   return (
@@ -22,6 +22,7 @@ function avatarUri(p?: { avatar_url?: string | null; username?: string } | null)
 }
 
 export default function FeedTab() {
+  const C = useC();
   const { profile } = useAuth();
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
@@ -59,6 +60,7 @@ export default function FeedTab() {
 }
 
 function Stories({ stories }: { stories: CheckIn[] }) {
+  const C = useC();
   const router = useRouter();
   if (stories.length === 0) return null;
   return (
@@ -115,6 +117,7 @@ function PostCard({
   userId: string | null;
   onOpenProfile: (u: string) => void;
 }) {
+  const C = useC();
   const [liked, setLiked] = useState(!!post.liked_by_me);
   const [count, setCount] = useState(post.like_count);
   const cat = post.place ? getCategory(post.place.category) : null;

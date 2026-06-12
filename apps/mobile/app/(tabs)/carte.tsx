@@ -21,9 +21,10 @@ import {
 } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { checkIn, fetchCheckIns, fetchNearby, getOrCreateConversation } from "@/lib/data";
-import { C } from "@/lib/theme";
+import { useC } from "@/lib/theme";
 
 export default function MapTab() {
+  const C = useC();
   const { profile } = useAuth();
   const [places, setPlaces] = useState<NearbyPlace[]>([]);
   const [center, setCenter] = useState(MONTREAL);
@@ -155,6 +156,7 @@ function PlaceModal({
   onClose: () => void;
   onChanged: () => void;
 }) {
+  const C = useC();
   const [list, setList] = useState<CheckIn[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
