@@ -19,7 +19,12 @@
     },
     "android": {
       "package": "com.whosin.app",
-      "permissions": ["ACCESS_FINE_LOCATION", "ACCESS_COARSE_LOCATION"]
+      "permissions": [
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
+      ]
     },
     "plugins": [
       "expo-router",
@@ -32,7 +37,12 @@
     ],
     "extra": {
       "supabaseUrl": "https://aovuweoehzflydjtxpdr.supabase.co",
-      "supabaseAnonKey": "sb_publishable_GpCxwDNKS1tJhuwbA2IvHw_zLLaMj0h"
-    }
+      "supabaseAnonKey": "sb_publishable_GpCxwDNKS1tJhuwbA2IvHw_zLLaMj0h",
+      "router": {},
+      "eas": {
+        "projectId": "b2ee4b25-1677-4d74-a27d-182b85759deb"
+      }
+    },
+    "owner": "louisdudemaine"
   }
 }
