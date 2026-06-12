@@ -166,7 +166,7 @@ export function PollComposer({
     <div className="fixed inset-0 z-[85] flex items-end justify-center">
       <div className="absolute inset-0 bg-black/60 animate-fade" onClick={onClose} />
       <div className="relative w-full max-w-[480px] rounded-t-3xl border-t border-border bg-surface p-5 pb-[max(20px,env(safe-area-inset-bottom))] animate-slide-up">
-        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
+        <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-text/20" />
         <h2 className="font-display text-lg font-bold">📊 {fr ? "On va où?" : "Where to?"}</h2>
         <p className="mt-0.5 text-xs text-text-dim">
           {fr ? "Choisis 2 à 4 lieux — la gang vote." : "Pick 2–4 places — the squad votes."}

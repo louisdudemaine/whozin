@@ -350,7 +350,7 @@ export function CheckInSheet({
         <div className="fixed inset-0 z-[90] flex items-end justify-center">
           <div className="absolute inset-0 bg-black/60 animate-fade" onClick={() => setBooking(false)} />
           <div className="relative w-full max-w-[480px] rounded-t-3xl border-t border-border bg-surface p-5 pb-[max(20px,env(safe-area-inset-bottom))] animate-slide-up">
-            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-text/20" />
             {bookDone ? (
               <div className="py-8 text-center">
                 <p className="text-4xl">✅</p>
@@ -369,8 +369,7 @@ export function CheckInSheet({
                   value={bookWhen}
                   onChange={(e) => setBookWhen(e.target.value)}
                   className="mt-3 w-full rounded-xl border border-border bg-surface-2 px-3 py-3 text-sm outline-none focus:border-brand"
-                  style={{ colorScheme: "dark" }}
-                />
+                  />
                 <div className="mt-3 flex items-center gap-2">
                   <span className="text-sm text-text-dim">{locale === "fr" ? "Pour" : "For"}</span>
                   {[2, 4, 6, 8].map((n) => (

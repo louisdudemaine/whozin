@@ -90,7 +90,7 @@ export default function WrappedPage() {
 
   return (
     <div className="min-h-[100dvh]">
-      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-[rgba(7,7,13,0.72)] px-4 py-3 backdrop-blur-xl pt-[max(12px,env(safe-area-inset-top))]">
+      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-[var(--header)] px-4 py-3 backdrop-blur-xl pt-[max(12px,env(safe-area-inset-top))]">
         <Link href="/profile" className="text-text-dim">←</Link>
         <h1 className="font-display text-xl font-extrabold">
           🎁 Wrapped <span className="text-gradient">{monthName}</span>

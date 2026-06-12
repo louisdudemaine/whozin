@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { getSupabase } from "@/lib/supabase";
 import { useT } from "@/lib/locale";
+import { ThemeToggle } from "@/lib/theme";
 import { Avatar } from "./Avatar";
 
 const DEMO = [
@@ -95,12 +96,15 @@ export function AuthScreen() {
         <span className="font-display text-xl font-extrabold">
           Whoz<span className="text-gradient neon-text">in</span>
         </span>
-        <button
-          onClick={toggle}
-          className="glass rounded-full px-3 py-1 text-xs font-bold text-text-dim"
-        >
-          {fr ? "EN" : "FR"}
-        </button>
+        <div className="flex items-center gap-2">
+          <ThemeToggle locale={locale} compact />
+          <button
+            onClick={toggle}
+            className="glass rounded-full px-3 py-1 text-xs font-bold text-text-dim"
+          >
+            {fr ? "EN" : "FR"}
+          </button>
+        </div>
       </div>
 
       {/* LA FENÊTRE : une vraie carte live, inclinée, qui respire */}
@@ -128,7 +132,7 @@ export function AuthScreen() {
             </div>
             <span className="font-display text-xl font-extrabold text-gradient">23</span>
           </div>
-          <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
+          <div className="mt-3 h-1 overflow-hidden rounded-full bg-text/10">
             <div
               className="h-full w-4/5 rounded-full"
               style={{

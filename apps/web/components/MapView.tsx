@@ -4,8 +4,13 @@ import { useEffect, useRef } from "react";
 import maplibregl from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import { getCategory, MONTREAL, type NearbyPlace } from "@whosin/shared";
+import { resolvedTheme } from "@/lib/theme";
 
-const STYLE_URL = "https://tiles.openfreemap.org/styles/dark";
+/* la carte suit le thème : nuit néon ou petit matin pastel */
+const STYLES = {
+  dark: "https://tiles.openfreemap.org/styles/dark",
+  light: "https://tiles.openfreemap.org/styles/positron",
+} as const;
 
 export function MapView({
   places,
@@ -35,7 +40,7 @@ export function MapView({
     const start = userLoc ?? MONTREAL;
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: STYLE_URL,
+      style: STYLES[resolvedTheme()],
       center: [start.lng, start.lat],
       zoom: 13,
       attributionControl: { compact: true },
@@ -52,6 +57,13 @@ export function MapView({
       mapRef.current = null;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // bascule de thème pendant que la carte est ouverte (les marqueurs DOM survivent)
+  useEffect(() => {
+    const onTheme = () => mapRef.current?.setStyle(STYLES[resolvedTheme()]);
+    window.addEventListener("wi:theme", onTheme);
+    return () => window.removeEventListener("wi:theme", onTheme);
   }, []);
 
   // place markers

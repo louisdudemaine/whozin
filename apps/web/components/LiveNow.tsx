@@ -123,7 +123,7 @@ export function LiveNow({
                 </div>
 
                 {/* jauge de chaleur : l'affluence se lit comme un égaliseur */}
-                <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/10">
+                <div className="mt-3 h-1 overflow-hidden rounded-full bg-text/10">
                   <div
                     className="h-full rounded-full"
                     style={{

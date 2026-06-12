@@ -25,6 +25,7 @@ const RING_SKINS: Record<string, string> = {
   gold: "conic-gradient(from 0deg, #ffc94d, #ff7849, #ffe9a8, #ffc94d)",
 };
 import { MessageButton } from "./MessageButton";
+import { ThemeToggle } from "@/lib/theme";
 
 export function ProfileView({ profile }: { profile: Profile }) {
   const { t, locale, toggle } = useT();
@@ -105,6 +106,7 @@ export function ProfileView({ profile }: { profile: Profile }) {
       <header className="flex items-center justify-between border-b border-border px-4 py-3 pt-[max(12px,env(safe-area-inset-top))]">
         <h1 className="text-lg font-black">@{profile.username}</h1>
         <div className="flex items-center gap-2">
+          <ThemeToggle locale={locale} compact />
           <button
             onClick={toggle}
             className="rounded-full border border-border px-2.5 py-1 text-xs text-text-dim"

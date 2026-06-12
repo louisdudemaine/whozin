@@ -3,23 +3,70 @@
 /* ════════════════════════════════════════════════════════════════
    WHOZIN — « AFTERGLOW » Néon Noir Montréal
    La lumière est la donnée : ce qui brille est vivant, maintenant.
+
+   Deux heures de la même ville :
+   · Sombre « Afterglow »   — 2h du matin, néons sur asphalte mouillé
+   · Clair  « First Light » — 7h du matin, lavande pâle, les néons
+     encore allumés dans le petit jour
+   Thème : auto (système) / clair / sombre via color-scheme + light-dark().
    ════════════════════════════════════════════════════════════════ */
 
 :root {
-  --background: #07070d;
-  --surface: #10101b;
-  --surface-2: #181826;
-  --border: rgba(255, 255, 255, 0.08);
-  --text: #f4f2f8;
-  --text-dim: #8b8b9e;
-  --brand: #ff2e63;
-  --brand-2: #ff7849;
-  --accent: #16d9c5;
-  --violet: #8b5cf6;
-  --gold: #ffc94d;
-  --glow-rose: rgba(255, 46, 99, 0.45);
-  --glow-teal: rgba(22, 217, 197, 0.4);
+  /* auto par défaut : le système décide; data-theme force un côté */
+  color-scheme: light dark;
+
+  --background: light-dark(#f6f4fb, #07070d);
+  --surface: light-dark(#ffffff, #10101b);
+  --surface-2: light-dark(#eeebf6, #181826);
+  --border: light-dark(rgba(26, 20, 38, 0.1), rgba(255, 255, 255, 0.08));
+  --text: light-dark(#1a1426, #f4f2f8);
+  --text-dim: light-dark(#6f6884, #8b8b9e);
+  --brand: light-dark(#f0214f, #ff2e63);
+  --brand-2: light-dark(#e8551c, #ff7849);
+  --accent: light-dark(#0b9d8e, #16d9c5);
+  --violet: light-dark(#7c4dff, #8b5cf6);
+  --gold: light-dark(#a87a00, #ffc94d);
+  --glow-rose: light-dark(rgba(255, 46, 99, 0.28), rgba(255, 46, 99, 0.45));
+  --glow-teal: light-dark(rgba(11, 157, 142, 0.26), rgba(22, 217, 197, 0.4));
+  /* scrim photo : TOUJOURS sombre (texte blanc sur média, peu importe le thème) */
   --scrim: linear-gradient(180deg, rgba(7, 7, 13, 0) 40%, rgba(7, 7, 13, 0.92) 100%);
+
+  /* chrome adaptatif */
+  --header: light-dark(rgba(246, 244, 251, 0.8), rgba(7, 7, 13, 0.72));
+  --shadow-c: light-dark(rgba(26, 20, 38, 0.14), rgba(0, 0, 0, 0.5));
+  --edge: light-dark(rgba(26, 20, 38, 0.05), rgba(255, 255, 255, 0.04));
+  --glass-a: light-dark(rgba(255, 255, 255, 0.78), rgba(255, 255, 255, 0.07));
+  --glass-b: light-dark(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.02));
+  --glass-edge: light-dark(rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.18));
+  --rain-rose: light-dark(rgba(255, 46, 99, 0.15), rgba(255, 46, 99, 0.16));
+  --rain-violet: light-dark(rgba(124, 77, 255, 0.12), rgba(139, 92, 246, 0.13));
+  --rain-teal: light-dark(rgba(11, 157, 142, 0.11), rgba(22, 217, 197, 0.12));
+  --rain-rose-x: light-dark(rgba(255, 46, 99, 0.26), rgba(255, 46, 99, 0.35));
+  --rain-violet-x: light-dark(rgba(124, 77, 255, 0.22), rgba(139, 92, 246, 0.3));
+  --rain-teal-x: light-dark(rgba(11, 157, 142, 0.2), rgba(22, 217, 197, 0.28));
+
+  /* réglages non-couleur (light-dark ne porte que des couleurs) */
+  --grain-o: 0.05;
+  --grain-blend: overlay;
+  --halo-f: 1;
+}
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  color-scheme: dark;
+}
+:root[data-theme="light"] {
+  --grain-o: 0.045;
+  --grain-blend: multiply;
+  --halo-f: 0.6;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="light"]):not([data-theme="dark"]) {
+    --grain-o: 0.045;
+    --grain-blend: multiply;
+    --halo-f: 0.6;
+  }
 }
 
 @theme inline {
@@ -74,17 +121,17 @@ body {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(42% 30% at 12% -4%, rgba(255, 46, 99, 0.16), transparent 70%),
-    radial-gradient(36% 26% at 100% 28%, rgba(139, 92, 246, 0.13), transparent 70%),
-    radial-gradient(50% 34% at 78% 104%, rgba(22, 217, 197, 0.12), transparent 70%);
+    radial-gradient(42% 30% at 12% -4%, var(--rain-rose), transparent 70%),
+    radial-gradient(36% 26% at 100% 28%, var(--rain-violet), transparent 70%),
+    radial-gradient(50% 34% at 78% 104%, var(--rain-teal), transparent 70%);
   filter: blur(48px);
   transform: translateZ(0);
 }
 .neon-rain--intense {
   background:
-    radial-gradient(46% 34% at 12% -4%, rgba(255, 46, 99, 0.35), transparent 70%),
-    radial-gradient(40% 30% at 100% 28%, rgba(139, 92, 246, 0.3), transparent 70%),
-    radial-gradient(54% 38% at 78% 104%, rgba(22, 217, 197, 0.28), transparent 70%);
+    radial-gradient(46% 34% at 12% -4%, var(--rain-rose-x), transparent 70%),
+    radial-gradient(40% 30% at 100% 28%, var(--rain-violet-x), transparent 70%),
+    radial-gradient(54% 38% at 78% 104%, var(--rain-teal-x), transparent 70%);
   animation: city-drift 24s ease-in-out infinite;
 }
 
@@ -94,24 +141,24 @@ body {
   inset: 0;
   z-index: 60;
   pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: overlay;
+  opacity: var(--grain-o, 0.05);
+  mix-blend-mode: var(--grain-blend, overlay);
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-size: 160px;
 }
 
 /* ── Verre Fumé : surface flottante à arête lumineuse ── */
 .glass {
-  background: linear-gradient(160deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.02));
+  background: linear-gradient(160deg, var(--glass-a), var(--glass-b));
   backdrop-filter: blur(20px) saturate(140%);
   -webkit-backdrop-filter: blur(20px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-top-color: rgba(255, 255, 255, 0.18);
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--border);
+  border-top-color: var(--glass-edge);
+  box-shadow: 0 8px 32px var(--shadow-c), inset 0 1px 0 var(--edge);
 }
 @supports not (backdrop-filter: blur(1px)) {
   .glass {
-    background: rgba(16, 16, 27, 0.92);
+    background: light-dark(rgba(252, 251, 254, 0.95), rgba(16, 16, 27, 0.92));
   }
 }
 
@@ -122,7 +169,7 @@ body {
   background: var(--surface);
   border: 1px solid var(--border);
   box-shadow:
-    0 0 0 1px rgba(255, 255, 255, 0.04),
+    0 0 0 1px var(--edge),
     0 0 calc(12px + 28px * var(--int, 0.4)) calc(-8px + 4px * var(--int, 0.4)) var(--glow, var(--glow-rose)),
     0 0 calc(40px + 60px * var(--int, 0.4)) -16px var(--glow, var(--glow-rose));
 }
@@ -131,7 +178,7 @@ body {
   position: absolute;
   inset: -30%;
   background: radial-gradient(60% 50% at 50% 100%, var(--glow, var(--glow-rose)), transparent 70%);
-  opacity: calc(0.18 + 0.35 * var(--int, 0.4));
+  opacity: calc((0.18 + 0.35 * var(--int, 0.4)) * var(--halo-f, 1));
   filter: blur(24px);
   pointer-events: none;
   z-index: 0;
@@ -217,7 +264,7 @@ body {
   filter: drop-shadow(0 0 14px rgba(255, 46, 99, 0.45));
 }
 .glow-cta {
-  box-shadow: 0 0 32px -6px var(--glow-rose), 0 4px 16px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 0 32px -6px var(--glow-rose), 0 4px 16px var(--shadow-c);
   position: relative;
   overflow: hidden;
 }
@@ -281,13 +328,13 @@ body {
   0%,
   100% {
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.06),
+      0 0 0 1px var(--edge),
       0 0 18px -6px var(--glow, var(--glow-rose)),
       0 0 50px -18px var(--glow, var(--glow-rose));
   }
   50% {
     box-shadow:
-      0 0 0 1px rgba(255, 255, 255, 0.09),
+      0 0 0 1px var(--edge),
       0 0 30px -4px var(--glow, var(--glow-rose)),
       0 0 90px -10px var(--glow, var(--glow-rose));
   }

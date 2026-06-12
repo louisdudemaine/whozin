@@ -68,7 +68,7 @@ export default function FeedPage() {
   return (
     <div className="min-h-[100dvh]">
       {/* top app bar — pouls de la ville, pas un clone IG */}
-      <header className="sticky top-0 z-20 border-b border-border bg-[rgba(7,7,13,0.72)] px-4 pb-2.5 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-xl">
+      <header className="sticky top-0 z-20 border-b border-border bg-[var(--header)] px-4 pb-2.5 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-xl">
         <div className="flex items-center justify-between">
           <span className="font-display text-2xl font-extrabold tracking-tight">
             Whoz<span className="text-gradient neon-text">in</span>

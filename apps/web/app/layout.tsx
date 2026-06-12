@@ -24,7 +24,10 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#07070d",
+  themeColor: [
+    { media: "(prefers-color-scheme: light)", color: "#f6f4fb" },
+    { media: "(prefers-color-scheme: dark)", color: "#07070d" },
+  ],
   width: "device-width",
   initialScale: 1,
   maximumScale: 1,
@@ -32,10 +35,14 @@ export const viewport: Viewport = {
   viewportFit: "cover",
 };
 
+/* applique le thème choisi AVANT le premier paint (zéro flash) */
+const THEME_BOOT = `try{var t=localStorage.getItem("wi.theme");if(t==="light"||t==="dark")document.documentElement.dataset.theme=t}catch(e){}`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="fr" className={`${body.variable} ${display.variable}`}>
+    <html lang="fr" className={`${body.variable} ${display.variable}`} suppressHydrationWarning>
       <body>
+        <script dangerouslySetInnerHTML={{ __html: THEME_BOOT }} />
         {/* la nuit derrière tout, le grain par-dessus tout */}
         <div className="neon-rain" aria-hidden />
         <div className="grain" aria-hidden />

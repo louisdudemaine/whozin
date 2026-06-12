@@ -56,7 +56,10 @@ export function BottomNav({ unread = 0 }: { unread?: number }) {
   return (
     <nav
       className="glass fixed bottom-[calc(env(safe-area-inset-bottom)+12px)] left-1/2 z-40 flex h-16 w-[calc(100%-24px)] max-w-[456px] -translate-x-1/2 items-center justify-around rounded-full"
-      style={{ background: "linear-gradient(160deg, rgba(16,16,27,.78), rgba(16,16,27,.6))" }}
+      style={{
+        background:
+          "linear-gradient(160deg, light-dark(rgba(255,255,255,.82), rgba(16,16,27,.78)), light-dark(rgba(255,255,255,.62), rgba(16,16,27,.6)))",
+      }}
     >
       <Tab href="/feed" icon="home" active={path.startsWith("/feed")} />
       <Tab href="/explore" icon="explore" active={path.startsWith("/explore")} />

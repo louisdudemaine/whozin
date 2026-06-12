@@ -72,7 +72,7 @@ export default function RecapPage() {
 
   return (
     <div className="min-h-[100dvh]">
-      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-[rgba(7,7,13,0.72)] px-4 py-3 backdrop-blur-xl pt-[max(12px,env(safe-area-inset-top))]">
+      <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-[var(--header)] px-4 py-3 backdrop-blur-xl pt-[max(12px,env(safe-area-inset-top))]">
         <Link href="/feed" className="text-text-dim">←</Link>
         <h1 className="flex-1 font-display text-xl font-extrabold">
           {live ? `🌙 ${fr ? "Ce soir" : "Tonight"}` : `🌅 ${fr ? "Ton recap" : "Your recap"}`}
@@ -164,7 +164,7 @@ export default function RecapPage() {
                         style={{ background: cat.color, boxShadow: `0 0 12px ${cat.color}` }}
                       />
                       {idx < recap!.stops.length - 1 && (
-                        <span className="w-px flex-1 bg-gradient-to-b from-white/25 to-white/5" />
+                        <span className="w-px flex-1 bg-gradient-to-b from-text/25 to-text/5" />
                       )}
                     </div>
                     <div className="pb-5">

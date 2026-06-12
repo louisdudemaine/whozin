@@ -87,7 +87,7 @@ export function SafetyMenu({
         <div className="fixed inset-0 z-[85] flex items-end justify-center">
           <div className="absolute inset-0 bg-black/60 animate-fade" onClick={() => { setOpen(false); setReporting(false); }} />
           <div className="glass relative w-full max-w-[480px] rounded-t-3xl p-5 pb-[max(20px,env(safe-area-inset-bottom))] animate-slide-up" style={{ background: "rgba(16,16,27,.92)" }}>
-            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-white/20" />
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-text/20" />
             {!reporting ? (
               <div className="flex flex-col gap-2">
                 <button
