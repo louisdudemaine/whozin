@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
 import { GuardianCard } from "@/components/Guardian";
@@ -188,6 +189,8 @@ export default function SecurityPage() {
 
         <GuardianCard />
 
+        <DataCard fr={fr} />
+
         <div className="mt-4 rounded-3xl border border-border bg-surface p-5 text-sm text-text-dim">
           <p className="font-bold text-text">🛡️ {fr ? "Déjà en place" : "Already in place"}</p>
           <ul className="mt-2 flex flex-col gap-1.5 text-[13px]">
@@ -196,8 +199,115 @@ export default function SecurityPage() {
             <li>✓ {fr ? "Blocage appliqué au niveau base de données" : "Blocks enforced at the database level"}</li>
             <li>→ {fr ? "FaceID/empreinte et SMS : avec l'app native (bientôt)" : "FaceID/fingerprint & SMS: with the native app (soon)"}</li>
           </ul>
+          <Link href="/confidentialite" className="mt-3 block text-[13px] font-bold text-brand-2">
+            📜 {fr ? "Politique de confidentialité (Loi 25)" : "Privacy policy (Law 25)"} →
+          </Link>
         </div>
       </div>
+    </div>
+  );
+}
+
+/** 📦 Mes données — portabilité (export JSON) + droit à l'oubli (Loi 25). */
+function DataCard({ fr }: { fr: boolean }) {
+  const supabase = getSupabase();
+  const router = useRouter();
+  const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+
+  async function exportData() {
+    setBusy(true);
+    try {
+      const { data, error } = await supabase.rpc("export_my_data");
+      if (error) throw error;
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "mes-donnees-whozin.json";
+      a.click();
+      URL.revokeObjectURL(url);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  async function eraseAccount() {
+    setBusy(true);
+    try {
+      const { error } = await supabase.rpc("erase_my_account");
+      if (error) throw error;
+      await supabase.auth.signOut();
+      router.replace("/");
+    } catch {
+      setBusy(false);
+    }
+  }
+
+  const word = fr ? "SUPPRIMER" : "DELETE";
+
+  return (
+    <div className="mt-4 rounded-3xl border border-border bg-surface p-5">
+      <p className="font-display text-base font-bold">📦 {fr ? "Mes données" : "My data"}</p>
+      <p className="mt-0.5 text-xs text-text-dim">
+        {fr
+          ? "Tes droits Loi 25, en libre-service — sans formulaire, sans attente."
+          : "Your Law 25 rights, self-serve — no forms, no waiting."}
+      </p>
+      <button
+        onClick={exportData}
+        disabled={busy}
+        className="pressable mt-4 w-full rounded-full border border-border py-3 text-sm font-bold disabled:opacity-50"
+      >
+        ⬇️ {fr ? "Exporter toutes mes données (JSON)" : "Export all my data (JSON)"}
+      </button>
+
+      {!confirming ? (
+        <button
+          onClick={() => setConfirming(true)}
+          className="mt-2.5 w-full rounded-full py-2.5 text-sm font-semibold"
+          style={{ color: "var(--brand)" }}
+        >
+          🗑 {fr ? "Supprimer mon compte" : "Delete my account"}
+        </button>
+      ) : (
+        <div className="mt-3 rounded-2xl border p-3.5" style={{ borderColor: "rgba(255,46,99,.4)" }}>
+          <p className="text-sm font-bold" style={{ color: "var(--brand)" }}>
+            {fr ? "Irréversible." : "Irreversible."}
+          </p>
+          <p className="mt-1 text-xs text-text-dim">
+            {fr
+              ? `Compte, check-ins, messages, photos : tout part, immédiatement. Écris ${word} pour confirmer.`
+              : `Account, check-ins, messages, photos: everything goes, immediately. Type ${word} to confirm.`}
+          </p>
+          <input
+            value={confirmText}
+            onChange={(e) => setConfirmText(e.target.value.toUpperCase())}
+            placeholder={word}
+            className="mt-2.5 w-full rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-center text-sm font-bold tracking-widest outline-none focus:border-brand"
+          />
+          <div className="mt-2.5 flex gap-2">
+            <button
+              onClick={() => {
+                setConfirming(false);
+                setConfirmText("");
+              }}
+              className="flex-1 rounded-full border border-border py-2.5 text-sm font-semibold text-text-dim"
+            >
+              {fr ? "Annuler" : "Cancel"}
+            </button>
+            <button
+              onClick={eraseAccount}
+              disabled={busy || confirmText !== word}
+              className="flex-1 rounded-full py-2.5 text-sm font-bold text-white disabled:opacity-40"
+              style={{ background: "var(--brand)" }}
+            >
+              {busy ? "…" : fr ? "Tout effacer" : "Erase everything"}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

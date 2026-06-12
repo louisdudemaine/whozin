@@ -225,6 +225,17 @@ export function AuthScreen() {
             >
               {busy ? t.common.loading : mode === "in" ? t.auth.signIn : t.auth.signUp}
             </button>
+            {mode === "up" && (
+              <p className="text-center text-[11px] leading-relaxed text-text-dim">
+                {fr ? "En créant un compte, tu acceptes notre " : "By creating an account, you accept our "}
+                <a href="/confidentialite" className="font-bold text-brand-2 underline">
+                  {fr ? "politique de confidentialité" : "privacy policy"}
+                </a>
+                {fr
+                  ? ". Ta position n'est partagée que quand tu le choisis."
+                  : ". Your location is only shared when you choose."}
+              </p>
+            )}
           </form>
 
           <div className="mt-4 flex items-center justify-between text-sm">
