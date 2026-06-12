@@ -9,10 +9,13 @@ export function MessageButton({
   targetUserId,
   variant = "full",
   label = "Message",
+  context,
 }: {
   targetUserId: string;
   variant?: "full" | "icon";
   label?: string;
+  /** 💬 contexte de lieu -> icebreakers contextuels dans le thread */
+  context?: { place?: string | null; cat?: string | null };
 }) {
   const router = useRouter();
   const { profile } = useAuth();
@@ -24,7 +27,10 @@ export function MessageButton({
     setBusy(true);
     try {
       const convId = await getOrCreateConversation(targetUserId);
-      router.push(`/messages/${convId}`);
+      const q = new URLSearchParams();
+      if (context?.place) q.set("place", context.place);
+      if (context?.cat) q.set("cat", context.cat);
+      router.push(`/messages/${convId}${q.size ? `?${q}` : ""}`);
     } catch {
       setBusy(false);
     }

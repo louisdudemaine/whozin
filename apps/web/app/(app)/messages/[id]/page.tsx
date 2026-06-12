@@ -20,6 +20,7 @@ import {
   uploadMedia,
 } from "@/lib/data";
 import { Avatar } from "@/components/Avatar";
+import { icebreakers } from "@/lib/icebreakers";
 import { findSpotifyLink, SpotifyEmbed } from "@/lib/spotify";
 import { PollCard, PollComposer } from "@/components/Poll";
 import { createSquadInvite } from "@/lib/data";
@@ -300,6 +301,28 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
                 ? "Demande envoyée — visible une fois acceptée."
                 : "Request sent — visible once accepted."}
             </p>
+          )}
+          {/* 💬 icebreakers : conversation vierge -> 3 ouvertures (contextuelles si lieu) */}
+          {!loading && messages.length === 0 && !isGroup && (
+            <div className="no-scrollbar flex gap-2 overflow-x-auto pb-2.5">
+              {(() => {
+                const q = typeof window !== "undefined" ? new URLSearchParams(window.location.search) : null;
+                return icebreakers({
+                  place: q?.get("place"),
+                  category: q?.get("cat"),
+                  locale: locale === "fr" ? "fr" : "en",
+                  seed: id,
+                }).map((line) => (
+                  <button
+                    key={line}
+                    onClick={() => setText(line)}
+                    className="glass pressable shrink-0 rounded-full px-3.5 py-2 text-[13px] font-semibold"
+                  >
+                    {line}
+                  </button>
+                ));
+              })()}
+            </div>
           )}
           <div className="flex items-center gap-2">
             <input

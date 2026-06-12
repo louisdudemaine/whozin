@@ -272,7 +272,11 @@ export function CheckInSheet({
                     </p>
                     {c.message && <p className="truncate text-sm text-text-dim">{c.message}</p>}
                   </div>
-                  <MessageButton targetUserId={c.user_id} variant="icon" />
+                  <MessageButton
+                    targetUserId={c.user_id}
+                    variant="icon"
+                    context={{ place: place.name, cat: place.category }}
+                  />
                 </li>
               ))}
             </ul>
