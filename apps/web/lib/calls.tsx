@@ -57,9 +57,28 @@ interface CallCtx {
   toggleCamera: () => void;
 }
 
-const ICE_SERVERS: RTCConfiguration = {
+const FALLBACK_ICE: RTCConfiguration = {
   iceServers: [{ urls: ["stun:stun.l.google.com:19302", "stun:stun1.l.google.com:19302"] }],
 };
+
+/** ICE servers avec TURN (via /api/turn) — fallback STUN seul si la route échoue. */
+let iceCache: RTCConfiguration | null = null;
+async function getIceServers(): Promise<RTCConfiguration> {
+  if (iceCache) return iceCache;
+  try {
+    const res = await fetch("/api/turn");
+    if (res.ok) {
+      const { iceServers } = await res.json();
+      if (Array.isArray(iceServers) && iceServers.length) {
+        iceCache = { iceServers };
+        return iceCache;
+      }
+    }
+  } catch {
+    /* offline ou route absente -> STUN */
+  }
+  return FALLBACK_ICE;
+}
 
 const RING_TIMEOUT_MS = 30_000;
 
@@ -139,8 +158,8 @@ export function CallProvider({ children }: { children: ReactNode }) {
   );
 
   /** Crée la RTCPeerConnection branchée sur le canal d'appel. */
-  const createPeer = useCallback((stream: MediaStream) => {
-    const pc = new RTCPeerConnection(ICE_SERVERS);
+  const createPeer = useCallback(async (stream: MediaStream) => {
+    const pc = new RTCPeerConnection(await getIceServers());
     pcRef.current = pc;
     stream.getTracks().forEach((t) => pc.addTrack(t, stream));
     pc.ontrack = (e) => {
@@ -259,7 +278,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       const i: CallInfo = { callId, kind, other, conversationId, initiator: true };
       setInfo(i);
       setState("outgoing");
-      createPeer(stream);
+      await createPeer(stream);
       joinCallChannel(callId, true);
 
       // fait sonner chez l'autre
@@ -317,7 +336,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
       return;
     }
     setState("connecting");
-    createPeer(stream);
+    await createPeer(stream);
     const chan = joinCallChannel(i.callId, false);
     // préviens l'appelant qu'on est prêt à recevoir l'offre
     const iv = setInterval(() => {
