@@ -136,7 +136,7 @@ export function AuthScreen() {
             <div
               className="h-full w-4/5 rounded-full"
               style={{
-                background: "linear-gradient(90deg,#16d9c5,#ff7849,#ff2e63)",
+                background: "linear-gradient(90deg, var(--accent), var(--brand-2), var(--brand))",
                 boxShadow: "0 0 8px var(--glow-rose)",
               }}
             />

@@ -70,8 +70,18 @@ export default function FeedPage() {
       {/* top app bar — pouls de la ville, pas un clone IG */}
       <header className="sticky top-0 z-20 border-b border-border bg-[var(--header)] px-4 pb-2.5 pt-[max(12px,env(safe-area-inset-top))] backdrop-blur-xl">
         <div className="flex items-center justify-between">
-          <span className="font-display text-2xl font-extrabold tracking-tight">
-            Whoz<span className="text-gradient neon-text">in</span>
+          <span className="flex items-center gap-2 font-display text-2xl font-extrabold tracking-tight">
+            <span>
+              Whoz<span className="text-gradient neon-text">in</span>
+            </span>
+            {profile?.pro_mode && (
+              <span
+                className="rounded-md border px-1.5 py-0.5 text-[10px] font-bold tracking-[0.14em]"
+                style={{ borderColor: "var(--brand)", color: "var(--brand)" }}
+              >
+                PRO
+              </span>
+            )}
           </span>
           <div className="flex items-center gap-3.5">
             <TravelPill />

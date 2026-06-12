@@ -69,6 +69,53 @@
   }
 }
 
+/* ════════════════════════════════════════════════════════════════
+   💼 PERSONA PRO — « Boardroom »
+   Même ville, autre uniforme : bleu d'encre, acier, zéro paillettes.
+   Posé par lib/auth (data-mode="pro" quand profiles.pro_mode).
+   Compose avec clair/sombre : chaque token reste un light-dark().
+   ════════════════════════════════════════════════════════════════ */
+:root[data-mode="pro"] {
+  --background: light-dark(#f4f6fa, #070b14);
+  --surface: light-dark(#ffffff, #0d1424);
+  --surface-2: light-dark(#e9edf5, #16203a);
+  --border: light-dark(rgba(15, 23, 42, 0.12), rgba(148, 163, 184, 0.14));
+  --text: light-dark(#0f172a, #e9eef8);
+  --text-dim: light-dark(#5b6880, #8e9cb8);
+  --brand: light-dark(#1d4ed8, #4d9fff);
+  --brand-2: light-dark(#0e7490, #38bdf8);
+  --accent: light-dark(#0f766e, #2dd4bf);
+  --violet: light-dark(#475569, #94a3b8);
+  --gold: light-dark(#8a6508, #d8b15c);
+  --glow-rose: light-dark(rgba(29, 78, 216, 0.16), rgba(77, 159, 255, 0.32));
+  --glow-teal: light-dark(rgba(15, 118, 110, 0.14), rgba(45, 212, 191, 0.26));
+  --header: light-dark(rgba(244, 246, 250, 0.84), rgba(7, 11, 20, 0.78));
+  --shadow-c: light-dark(rgba(15, 23, 42, 0.12), rgba(0, 0, 0, 0.55));
+  --edge: light-dark(rgba(15, 23, 42, 0.05), rgba(148, 163, 184, 0.07));
+  --glass-a: light-dark(rgba(255, 255, 255, 0.82), rgba(148, 163, 184, 0.08));
+  --glass-b: light-dark(rgba(255, 255, 255, 0.55), rgba(148, 163, 184, 0.02));
+  --glass-edge: light-dark(rgba(255, 255, 255, 0.95), rgba(148, 163, 184, 0.2));
+  --rain-rose: light-dark(rgba(29, 78, 216, 0.07), rgba(77, 159, 255, 0.08));
+  --rain-violet: light-dark(rgba(71, 85, 105, 0.06), rgba(148, 163, 184, 0.06));
+  --rain-teal: light-dark(rgba(15, 118, 110, 0.05), rgba(45, 212, 191, 0.06));
+  --rain-rose-x: light-dark(rgba(29, 78, 216, 0.12), rgba(77, 159, 255, 0.16));
+  --rain-violet-x: light-dark(rgba(71, 85, 105, 0.1), rgba(148, 163, 184, 0.12));
+  --rain-teal-x: light-dark(rgba(15, 118, 110, 0.09), rgba(45, 212, 191, 0.12));
+  /* au bureau : halos discrets, pas de grain de club */
+  --halo-f: 0.4;
+  --grain-o: 0.02;
+}
+/* pas de shimmer ni d'enseigne au néon en réunion */
+:root[data-mode="pro"] .glow-cta::after {
+  display: none;
+}
+:root[data-mode="pro"] .neon-text {
+  filter: none;
+}
+:root[data-mode="pro"] .halo-breathe {
+  animation: none;
+}
+
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
@@ -195,7 +242,14 @@ body {
 .ring {
   padding: 2px;
   border-radius: 9999px;
-  background: conic-gradient(from var(--a), #ff2e63, #ff7849, #16d9c5, #8b5cf6, #ff2e63);
+  background: conic-gradient(
+    from var(--a),
+    var(--brand),
+    var(--brand-2),
+    var(--accent),
+    var(--violet),
+    var(--brand)
+  );
   animation: ring-spin 6s linear infinite;
   display: inline-block;
 }
@@ -223,11 +277,11 @@ body {
 .fuse {
   height: 3px;
   border-radius: 2px;
-  background: linear-gradient(90deg, #16d9c5, #ff7849, #ff2e63);
+  background: linear-gradient(90deg, var(--accent), var(--brand-2), var(--brand));
   background-size: 300% 100%;
   background-position: calc((1 - var(--life, 1)) * 100%) 0;
   width: calc(var(--life, 1) * 100%);
-  box-shadow: 0 0 6px rgba(22, 217, 197, 0.5);
+  box-shadow: 0 0 6px var(--glow-teal);
   transition: width 1s linear;
 }
 

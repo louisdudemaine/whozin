@@ -57,6 +57,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 💼 le persona Pro change TOUTE l'identité visuelle (tokens [data-mode="pro"])
+  useEffect(() => {
+    if (profile?.pro_mode) document.documentElement.dataset.mode = "pro";
+    else delete document.documentElement.dataset.mode;
+  }, [profile?.pro_mode]);
+
   const value: AuthCtx = {
     session,
     profile,

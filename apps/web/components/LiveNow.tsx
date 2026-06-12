@@ -128,7 +128,7 @@ export function LiveNow({
                     className="h-full rounded-full"
                     style={{
                       width: `${Math.max(12, heat * 100)}%`,
-                      background: "linear-gradient(90deg, #16d9c5, #ff7849, #ff2e63)",
+                      background: "linear-gradient(90deg, var(--accent), var(--brand-2), var(--brand))",
                       boxShadow: `0 0 8px ${hexGlow(cat.color, 0.6)}`,
                     }}
                   />
