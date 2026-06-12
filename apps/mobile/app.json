@@ -12,13 +12,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.whosin.app",
+      "bundleIdentifier": "ca.whozin.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Who's In utilise ta position pour te montrer ce qui se passe autour de toi."
+        "NSLocationWhenInUseUsageDescription": "Who's In utilise ta position pour te montrer ce qui se passe autour de toi.",
+        "ITSAppUsesNonExemptEncryption": false
       }
     },
     "android": {
-      "package": "com.whosin.app",
+      "package": "ca.whozin.app",
       "permissions": [
         "ACCESS_FINE_LOCATION",
         "ACCESS_COARSE_LOCATION",
