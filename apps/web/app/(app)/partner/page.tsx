@@ -295,6 +295,9 @@ export default function PartnerPage() {
             </button>
           </div>
 
+          {/* 🪟 widget embarquable */}
+          <WidgetSection placeId={partner.place_id} fr={fr} />
+
           {/* mes événements */}
           {events.length > 0 && (
             <div className="rounded-3xl border border-border bg-surface p-4">
@@ -327,6 +330,52 @@ export default function PartnerPage() {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+/** 🪟 Widget B2B — snippet iframe à coller sur le site du lieu. */
+function WidgetSection({ placeId, fr }: { placeId: string; fr: boolean }) {
+  const [copied, setCopied] = useState(false);
+  const origin = typeof window !== "undefined" ? window.location.origin : "";
+  const snippet = `<iframe src="${origin}/widget/${placeId}" width="360" height="230" style="border:0;border-radius:24px" loading="lazy" title="Whozin Live"></iframe>`;
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(snippet);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard indisponible */
+    }
+  }
+
+  return (
+    <div className="rounded-3xl border border-border bg-surface p-4">
+      <p className="font-display text-base font-bold">🪟 {fr ? "Widget pour ton site" : "Widget for your website"}</p>
+      <p className="mt-0.5 text-xs text-text-dim">
+        {fr
+          ? "Montre en direct combien de monde est chez toi — colle ce code sur ton site."
+          : "Show live how many people are at your place — paste this on your website."}
+      </p>
+      <div className="mt-3 overflow-hidden rounded-2xl border border-border">
+        <iframe
+          src={`/widget/${placeId}${fr ? "" : "?lang=en"}`}
+          className="h-[230px] w-full"
+          style={{ border: 0 }}
+          title="Whozin Live"
+        />
+      </div>
+      <pre className="no-scrollbar mt-3 overflow-x-auto rounded-xl bg-surface-2 px-3 py-2.5 text-[10px] leading-relaxed text-text-dim">
+        {snippet}
+      </pre>
+      <button
+        onClick={copy}
+        className="pressable mt-2.5 w-full rounded-full border border-border py-2.5 text-sm font-bold"
+        style={copied ? { borderColor: "#3ddc84", color: "#3ddc84" } : undefined}
+      >
+        {copied ? (fr ? "✓ Copié!" : "✓ Copied!") : `📋 ${fr ? "Copier le code" : "Copy the code"}`}
+      </button>
     </div>
   );
 }
