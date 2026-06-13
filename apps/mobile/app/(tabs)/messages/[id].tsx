@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
+  ActionSheetIOS,
+  Alert,
   FlatList,
   Image,
   KeyboardAvoidingView,
@@ -20,6 +22,7 @@ import {
   fetchMessages,
   markConversationRead,
   sendMessage,
+  setEphemeralMode,
 } from "@/lib/data";
 import { useC } from "@/lib/theme";
 
@@ -35,8 +38,41 @@ export default function Thread() {
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
   const [iAmRecipient, setIAmRecipient] = useState(false);
+  const [ephemeral, setEphemeral] = useState<"off" | "read" | "24h">("off");
+  const [now, setNow] = useState(() => Date.now());
   const listRef = useRef<FlatList<Message>>(null);
   const meId = profile?.id;
+
+  const chooseEphemeral = useCallback(() => {
+    const apply = async (mode: "off" | "read" | "24h") => {
+      setEphemeral(mode);
+      try {
+        await setEphemeralMode(convId, mode);
+      } catch {
+        /* ignore */
+      }
+    };
+    if (Platform.OS === "ios") {
+      ActionSheetIOS.showActionSheetWithOptions(
+        {
+          title: "🔥 Messages éphémères",
+          options: ["Désactivé", "Après lecture", "Après 24 heures", "Annuler"],
+          cancelButtonIndex: 3,
+        },
+        (i) => {
+          if (i === 0) apply("off");
+          else if (i === 1) apply("read");
+          else if (i === 2) apply("24h");
+        }
+      );
+    } else {
+      Alert.alert("🔥 Messages éphémères", "Ce qui se dit la nuit reste à la nuit.", [
+        { text: "Désactivé", onPress: () => apply("off") },
+        { text: "Après lecture", onPress: () => apply("read") },
+        { text: "Après 24 h", onPress: () => apply("24h") },
+      ]);
+    }
+  }, [convId]);
 
   useEffect(() => {
     if (!meId) return;
@@ -57,8 +93,16 @@ export default function Thread() {
       setOther((prof as Profile) ?? null);
       navigation.setOptions({ title: (prof as Profile)?.display_name || (prof as Profile)?.username || "" });
       setMessages(msgs);
+      setEphemeral((conv.ephemeral_mode as "off" | "read" | "24h") ?? "off");
       setPending(conv.status === "pending");
       setIAmRecipient(conv.requested_by !== meId);
+      navigation.setOptions({
+        headerRight: () => (
+          <Pressable onPress={chooseEphemeral} hitSlop={10} style={{ paddingHorizontal: 4 }}>
+            <Text style={{ fontSize: 20, opacity: conv.ephemeral_mode && conv.ephemeral_mode !== "off" ? 1 : 0.4 }}>🔥</Text>
+          </Pressable>
+        ),
+      });
       markConversationRead(convId).catch(() => {});
     })();
 
@@ -73,12 +117,38 @@ export default function Thread() {
           if (m.sender_id !== meId) markConversationRead(convId).catch(() => {});
         }
       )
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${convId}` },
+        (payload) => {
+          const m = payload.new as Message;
+          setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "messages", filter: `conversation_id=eq.${convId}` },
+        (payload) => {
+          const old = payload.old as { id: string };
+          setMessages((prev) => prev.filter((x) => x.id !== old.id));
+        }
+      )
       .subscribe();
     return () => {
       alive = false;
       supabase.removeChannel(channel);
     };
-  }, [convId, meId, navigation, router]);
+  }, [convId, meId, navigation, router, chooseEphemeral]);
+
+  // 🔥 horloge : compte à rebours + retrait local des messages expirés
+  useEffect(() => {
+    const t = setInterval(() => {
+      const n = Date.now();
+      setNow(n);
+      setMessages((prev) => prev.filter((m) => !m.expires_at || new Date(m.expires_at).getTime() > n));
+    }, 1000);
+    return () => clearInterval(t);
+  }, []);
 
   const send = useCallback(async () => {
     if (!meId || !text.trim()) return;
@@ -96,6 +166,13 @@ export default function Thread() {
       style={{ flex: 1, backgroundColor: C.bg }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
+      {ephemeral !== "off" && (
+        <View style={{ backgroundColor: "rgba(255,46,99,.1)", paddingVertical: 6, alignItems: "center" }}>
+          <Text style={{ color: C.brand, fontSize: 11, fontWeight: "800" }}>
+            🔥 {ephemeral === "read" ? "Éphémère · disparaît après lecture" : "Éphémère · disparaît après 24 h"}
+          </Text>
+        </View>
+      )}
       <FlatList
         ref={listRef}
         data={messages}
@@ -104,9 +181,35 @@ export default function Thread() {
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         renderItem={({ item }) => {
           const mine = item.sender_id === meId;
+          const secsLeft = item.expires_at
+            ? Math.max(0, Math.round((new Date(item.expires_at).getTime() - now) / 1000))
+            : null;
+          const ttl =
+            secsLeft === null
+              ? null
+              : secsLeft >= 3600
+                ? `${Math.round(secsLeft / 3600)} h`
+                : secsLeft >= 60
+                  ? `${Math.round(secsLeft / 60)} min`
+                  : `${secsLeft} s`;
           return (
-            <View style={{ alignItems: mine ? "flex-end" : "flex-start" }}>
-              {item.image_url ? (
+            <View style={{ alignItems: mine ? "flex-end" : "flex-start", opacity: secsLeft !== null && secsLeft <= 10 ? 0.5 : 1 }}>
+              {item.view_once ? (
+                <View
+                  style={{
+                    backgroundColor: item.opened_at ? C.surface2 : "rgba(255,46,99,.12)",
+                    borderWidth: item.opened_at ? 0 : 1,
+                    borderColor: C.brand,
+                    borderRadius: 18,
+                    paddingHorizontal: 14,
+                    paddingVertical: 10,
+                  }}
+                >
+                  <Text style={{ color: item.opened_at ? C.textDim : C.brand, fontWeight: "700", fontSize: 14 }}>
+                    📸 {item.opened_at ? "Photo ouverte" : mine ? "Photo vue unique envoyée" : "Photo · ouvre sur le web"}
+                  </Text>
+                </View>
+              ) : item.image_url ? (
                 <Image
                   source={{ uri: item.image_url }}
                   style={{ width: 200, height: 200, borderRadius: 16, backgroundColor: C.surface2 }}
@@ -125,6 +228,9 @@ export default function Thread() {
                 >
                   <Text style={{ color: mine ? "#fff" : C.text, fontSize: 15 }}>{item.body}</Text>
                 </View>
+              )}
+              {ttl && (
+                <Text style={{ color: C.brand, fontSize: 10, fontWeight: "800", marginTop: 2 }}>🔥 {ttl}</Text>
               )}
             </View>
           );

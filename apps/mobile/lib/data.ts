@@ -170,13 +170,16 @@ export async function fetchConversation(convId: string): Promise<Conversation | 
 }
 
 export async function fetchMessages(convId: string): Promise<Message[]> {
-  const { data, error } = await getSupabase()
-    .from("messages")
-    .select("*")
-    .eq("conversation_id", convId)
-    .order("created_at", { ascending: true });
+  // RPC : masque les snaps non ouverts + filtre les expirés (parité web)
+  const { data, error } = await getSupabase().rpc("fetch_messages", { conv: convId });
   if (error) throw error;
   return (data as Message[]) ?? [];
+}
+
+/** 🔥 mode éphémère de la conversation (off | read | 24h). */
+export async function setEphemeralMode(convId: string, mode: "off" | "read" | "24h") {
+  const { error } = await getSupabase().rpc("set_ephemeral_mode", { conv: convId, mode });
+  if (error) throw error;
 }
 
 export async function sendMessage(convId: string, senderId: string, body: string, imageUrl?: string | null) {
