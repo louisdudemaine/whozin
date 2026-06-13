@@ -14,6 +14,7 @@ import { StoriesBar } from "@/components/Stories";
 import { NearbyStrip } from "@/components/NearbyStrip";
 import { BeaconStrip } from "@/components/BeaconStrip";
 import { GuardianStrips } from "@/components/Guardian";
+import { MoveStrip } from "@/components/MoveStrip";
 import { TravelPill } from "@/components/TravelPill";
 
 export default function FeedPage() {
@@ -142,6 +143,7 @@ export default function FeedPage() {
               <span className="text-text-dim">→</span>
             </Link>
           )}
+          <MoveStrip />
           <GuardianStrips />
           <BeaconStrip />
           <NearbyStrip />

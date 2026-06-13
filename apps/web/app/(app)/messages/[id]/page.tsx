@@ -132,6 +132,14 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
 
+  // 🌃 arrivé depuis « Le Move » d'un ami -> ouverture pré-remplie
+  useEffect(() => {
+    const move = new URLSearchParams(window.location.search).get("move");
+    if (move) {
+      setText(locale === "fr" ? `Hey! Vu ton move « ${move} » — ` : `Hey! Saw your move "${move}" — `);
+    }
+  }, [locale]);
+
   // 🔥 horloge : rafraîchit les comptes à rebours et retire localement les expirés
   useEffect(() => {
     if (ephemeral === "off" && !messages.some((m) => m.expires_at)) return;

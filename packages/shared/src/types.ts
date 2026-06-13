@@ -169,6 +169,22 @@ export interface DatingCandidate {
   crossed_at?: string | null;
 }
 
+/** 🌃 Le Move — statut éphémère « c'est quoi le move ce soir? » */
+export interface MyMove {
+  body: string;
+  emoji: string | null;
+  expires_at: string;
+}
+export interface FriendMove {
+  user_id: string;
+  username: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  body: string;
+  emoji: string | null;
+  created_at: string;
+}
+
 /** 📈 Sismographe d'ambiance — renvoyé par le RPC city_pulse */
 export interface CityPulse {
   series: { h: string; n: number }[];

@@ -10,7 +10,9 @@ import type {
   DatingCandidate,
   DatingProfile,
   EphemeralMode,
+  FriendMove,
   Message,
+  MyMove,
   NearbyPlace,
   NightRecap,
   Place,
@@ -1222,4 +1224,26 @@ export async function fetchMyCrew(): Promise<CrewMate[]> {
   const { data, error } = await getSupabase().rpc("my_crew");
   if (error) return [];
   return (data ?? []) as CrewMate[];
+}
+
+// ===== 🌃 Le Move (statuts éphémères) =====
+
+export async function fetchMyMove(): Promise<MyMove | null> {
+  const { data } = await getSupabase().rpc("my_move");
+  return (data ?? null) as MyMove | null;
+}
+
+export async function fetchFriendsMoves(): Promise<FriendMove[]> {
+  const { data, error } = await getSupabase().rpc("friends_moves");
+  if (error) return [];
+  return (data ?? []) as FriendMove[];
+}
+
+export async function setMove(body: string, emoji: string | null): Promise<void> {
+  const { error } = await getSupabase().rpc("set_move", { in_body: body, in_emoji: emoji });
+  if (error) throw error;
+}
+
+export async function clearMove(): Promise<void> {
+  await getSupabase().rpc("clear_move");
 }
