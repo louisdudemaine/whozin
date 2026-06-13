@@ -93,7 +93,11 @@ export interface Conversation {
   requested_by: string | null;
   created_at: string;
   last_message_at: string;
+  /** 🔥 messages éphémères : off | read (10 s après lu) | 24h */
+  ephemeral_mode?: EphemeralMode;
 }
+
+export type EphemeralMode = "off" | "read" | "24h";
 
 export interface Message {
   id: string;
@@ -104,6 +108,8 @@ export interface Message {
   poll_id?: string | null;
   created_at: string;
   read_at: string | null;
+  /** 🔥 si éphémère : instant de disparition (le client filtre, le cron purge) */
+  expires_at?: string | null;
 }
 
 export interface PollOption {

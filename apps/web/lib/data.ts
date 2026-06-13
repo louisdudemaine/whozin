@@ -9,6 +9,7 @@ import type {
   ConversationPreview,
   DatingCandidate,
   DatingProfile,
+  EphemeralMode,
   Message,
   NearbyPlace,
   NightRecap,
@@ -1083,9 +1084,16 @@ export async function fetchMessages(convId: string): Promise<Message[]> {
     .from("messages")
     .select("*")
     .eq("conversation_id", convId)
+    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
     .order("created_at", { ascending: true });
   if (error) throw error;
   return (data as Message[]) ?? [];
+}
+
+/** 🔥 règle le mode éphémère d'une conversation (off | read | 24h). */
+export async function setEphemeralMode(convId: string, mode: EphemeralMode): Promise<void> {
+  const { error } = await getSupabase().rpc("set_ephemeral_mode", { conv: convId, mode });
+  if (error) throw error;
 }
 
 export async function sendMessage(

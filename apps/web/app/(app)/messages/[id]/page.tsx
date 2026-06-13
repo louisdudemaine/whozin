@@ -3,7 +3,7 @@
 import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import type { Message, Profile } from "@whosin/shared";
+import type { EphemeralMode, Message, Profile } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useCall } from "@/lib/calls";
 import { pushNotify } from "@/lib/push";
@@ -17,6 +17,7 @@ import {
   fetchMessages,
   markConversationRead,
   sendMessage,
+  setEphemeralMode,
   uploadMedia,
 } from "@/lib/data";
 import { Avatar } from "@/components/Avatar";
@@ -43,6 +44,9 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
   const [uploading, setUploading] = useState(false);
   const [pollOpen, setPollOpen] = useState(false);
   const [inviteLink, setInviteLink] = useState<string | null>(null);
+  const [ephemeral, setEphemeral] = useState<EphemeralMode>("off");
+  const [ephemeralOpen, setEphemeralOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -62,6 +66,7 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
       const msgs = await fetchMessages(id);
       if (!alive) return;
       setMessages(msgs);
+      setEphemeral(conv.ephemeral_mode ?? "off");
       setPending(conv.status === "pending" && !conv.is_group);
       setIAmRecipient(conv.requested_by !== meId);
 
@@ -98,6 +103,23 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
           if (m.sender_id !== meId) markConversationRead(id).catch(() => {});
         }
       )
+      // 🔥 un message éphémère qui se consume disparaît en direct des deux écrans
+      .on(
+        "postgres_changes",
+        { event: "UPDATE", schema: "public", table: "messages", filter: `conversation_id=eq.${id}` },
+        (payload) => {
+          const m = payload.new as Message;
+          setMessages((prev) => prev.map((x) => (x.id === m.id ? { ...x, ...m } : x)));
+        }
+      )
+      .on(
+        "postgres_changes",
+        { event: "DELETE", schema: "public", table: "messages", filter: `conversation_id=eq.${id}` },
+        (payload) => {
+          const old = payload.old as { id: string };
+          setMessages((prev) => prev.filter((x) => x.id !== old.id));
+        }
+      )
       .subscribe();
 
     return () => {
@@ -109,6 +131,27 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages.length]);
+
+  // 🔥 horloge : rafraîchit les comptes à rebours et retire localement les expirés
+  useEffect(() => {
+    if (ephemeral === "off" && !messages.some((m) => m.expires_at)) return;
+    const t = setInterval(() => {
+      const n = Date.now();
+      setNow(n);
+      setMessages((prev) => prev.filter((m) => !m.expires_at || new Date(m.expires_at).getTime() > n));
+    }, 1000);
+    return () => clearInterval(t);
+  }, [ephemeral, messages]);
+
+  async function pickEphemeral(mode: EphemeralMode) {
+    setEphemeral(mode);
+    setEphemeralOpen(false);
+    try {
+      await setEphemeralMode(id, mode);
+    } catch {
+      /* ignore */
+    }
+  }
 
   async function send() {
     if (!meId || !text.trim()) return;
@@ -170,13 +213,25 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
             <span className="brand-gradient flex h-9 w-9 items-center justify-center rounded-full text-lg">👥</span>
             <span className="truncate font-semibold">{groupTitle}</span>
             <button
+              onClick={() => setEphemeralOpen(true)}
+              aria-label="Messages éphémères"
+              className="pressable ml-auto flex h-9 w-9 items-center justify-center rounded-full text-base"
+              style={
+                ephemeral !== "off"
+                  ? { background: "rgba(255,46,99,.16)", border: "1px solid var(--brand)" }
+                  : { background: "var(--surface-2)", border: "1px solid var(--border)" }
+              }
+            >
+              🔥
+            </button>
+            <button
               onClick={async () => {
                 if (!meId) return;
                 const code = await createSquadInvite(id, meId);
                 setInviteLink(`${window.location.origin}/join/${code}`);
               }}
               aria-label="Inviter la gang"
-              className="glass pressable ml-auto flex h-9 w-9 items-center justify-center rounded-full text-base"
+              className="glass pressable flex h-9 w-9 items-center justify-center rounded-full text-base"
             >
               🔗
             </button>
@@ -189,6 +244,18 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
         )}
         {!isGroup && other && !pending && (
           <div className="ml-auto flex items-center gap-2">
+            <button
+              onClick={() => setEphemeralOpen(true)}
+              aria-label="Messages éphémères"
+              className="pressable flex h-9 w-9 items-center justify-center rounded-full"
+              style={
+                ephemeral !== "off"
+                  ? { background: "rgba(255,46,99,.16)", border: "1px solid var(--brand)" }
+                  : { background: "var(--surface-2)", border: "1px solid var(--border)" }
+              }
+            >
+              🔥
+            </button>
             <button
               onClick={() => callState === "idle" && startCall(other, "audio", id)}
               aria-label="Appel audio"
@@ -212,6 +279,17 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
         )}
       </header>
 
+      {ephemeral !== "off" && (
+        <div
+          className="flex items-center justify-center gap-1.5 py-1.5 text-[11px] font-bold"
+          style={{ background: "rgba(255,46,99,.1)", color: "var(--brand)" }}
+        >
+          🔥 {ephemeral === "read"
+            ? locale === "fr" ? "Éphémère · disparaît après lecture" : "Vanish · gone after it's read"
+            : locale === "fr" ? "Éphémère · disparaît après 24 h" : "Vanish · gone after 24h"}
+        </div>
+      )}
+
       <div className="flex-1 overflow-y-auto px-3 py-4">
         {loading ? (
           <p className="py-10 text-center text-sm text-text-dim">{t.common.loading}</p>
@@ -220,10 +298,14 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
             {messages.map((m) => {
               const mine = m.sender_id === meId;
               const sender = isGroup && !mine ? membersById.get(m.sender_id) : undefined;
+              const secsLeft = m.expires_at
+                ? Math.max(0, Math.round((new Date(m.expires_at).getTime() - now) / 1000))
+                : null;
               return (
                 <div
                   key={m.id}
                   className={mine ? "flex justify-end" : "flex items-end justify-start gap-2"}
+                  style={secsLeft !== null && secsLeft <= 10 ? { opacity: 0.45 + 0.05 * secsLeft } : undefined}
                 >
                   {isGroup && !mine && <Avatar profile={sender} size={26} />}
                   <div className="flex max-w-[80%] flex-col">
@@ -262,6 +344,18 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
                           </span>
                         )}
                       </>
+                    )}
+                    {secsLeft !== null && (
+                      <span
+                        className={`mt-0.5 text-[10px] font-bold ${mine ? "self-end" : "self-start"}`}
+                        style={{ color: "var(--brand)" }}
+                      >
+                        🔥 {secsLeft >= 3600
+                          ? `${Math.round(secsLeft / 3600)} h`
+                          : secsLeft >= 60
+                            ? `${Math.round(secsLeft / 60)} min`
+                            : `${secsLeft} s`}
+                      </span>
                     )}
                   </div>
                 </div>
@@ -374,6 +468,45 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
 
       {pollOpen && (
         <PollComposer convId={id} onClose={() => setPollOpen(false)} onCreated={() => setPollOpen(false)} />
+      )}
+
+      {ephemeralOpen && (
+        <div className="fixed inset-0 z-[85] flex items-end justify-center">
+          <div className="absolute inset-0 bg-black/60 animate-fade" onClick={() => setEphemeralOpen(false)} />
+          <div className="relative w-full max-w-[480px] rounded-t-3xl border-t border-border bg-surface p-5 pb-[max(20px,env(safe-area-inset-bottom))] animate-slide-up">
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-text/20" />
+            <h2 className="font-display text-lg font-bold">🔥 {locale === "fr" ? "Messages éphémères" : "Disappearing messages"}</h2>
+            <p className="mt-0.5 text-xs text-text-dim">
+              {locale === "fr"
+                ? "Ce qui se dit la nuit reste à la nuit. Le réglage vaut pour vous deux."
+                : "What's said at night stays at night. The setting applies to both of you."}
+            </p>
+            <div className="mt-4 flex flex-col gap-2">
+              {([
+                { v: "off" as const, e: "💬", fr: "Désactivé", en: "Off", frd: "Les messages restent", end: "Messages stay" },
+                { v: "read" as const, e: "👀", fr: "Après lecture", en: "After it's read", frd: "Disparaît ~10 s après être lu", end: "Gone ~10s after read" },
+                { v: "24h" as const, e: "🌅", fr: "Après 24 heures", en: "After 24 hours", frd: "Disparaît le lendemain", end: "Gone the next day" },
+              ]).map((o) => (
+                <button
+                  key={o.v}
+                  onClick={() => pickEphemeral(o.v)}
+                  className="pressable flex items-center gap-3 rounded-2xl border px-4 py-3 text-left"
+                  style={{
+                    borderColor: ephemeral === o.v ? "var(--brand)" : "var(--border)",
+                    background: ephemeral === o.v ? "rgba(255,46,99,.08)" : "var(--surface-2)",
+                  }}
+                >
+                  <span className="text-xl">{o.e}</span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-bold">{locale === "fr" ? o.fr : o.en}</span>
+                    <span className="block text-[11px] text-text-dim">{locale === "fr" ? o.frd : o.end}</span>
+                  </span>
+                  {ephemeral === o.v && <span className="text-brand">✓</span>}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
       )}
 
       {inviteLink && (
