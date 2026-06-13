@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/auth";
 import { CallProvider } from "@/lib/calls";
 import { CallOverlay } from "@/components/CallOverlay";
 import { MfaChallenge } from "@/components/MfaChallenge";
+import { Onboarding } from "@/components/Onboarding";
 import { PushBanner } from "@/components/PushBanner";
 import { getSupabase } from "@/lib/supabase";
 import { BottomNav } from "@/components/BottomNav";
@@ -14,9 +15,10 @@ import { CreateModal } from "@/components/CreateModal";
 import { unreadCount } from "@/lib/data";
 
 export default function AppLayout({ children }: { children: React.ReactNode }) {
-  const { session, loading } = useAuth();
+  const { session, profile, loading } = useAuth();
   const [createOpen, setCreateOpen] = useState(false);
   const [unread, setUnread] = useState(0);
+  const [onboardDone, setOnboardDone] = useState(false);
   // barrière 2FA : 'checking' -> 'ok' | 'required'
   const [mfa, setMfa] = useState<"checking" | "ok" | "required">("checking");
 
@@ -78,6 +80,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
   if (!session) return <AuthScreen />;
   if (mfa === "required") return <MfaChallenge onDone={() => setMfa("ok")} />;
+  // 🧭 questionnaire d'onboarding pour les nouveaux comptes
+  if (profile && profile.onboarded === false && !onboardDone) {
+    return <Onboarding onDone={() => setOnboardDone(true)} />;
+  }
 
   return (
     <CallProvider>

@@ -22,6 +22,13 @@ export interface Profile {
   pro_title?: string | null;
   pro_company?: string | null;
   pro_linkedin?: string | null;
+  pro_industry?: string | null;
+  /** objectifs de réseautage (mode pro) */
+  pro_goals?: string[];
+  /** 🧭 intérêts personnels (catégories/vibes) choisis à l'onboarding */
+  interests?: string[];
+  /** questionnaire d'onboarding complété/passé */
+  onboarded?: boolean;
   created_at: string;
 }
 
