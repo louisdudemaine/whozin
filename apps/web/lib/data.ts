@@ -1081,15 +1081,17 @@ export async function fetchConversation(convId: string): Promise<Conversation | 
 }
 
 export async function fetchMessages(convId: string): Promise<Message[]> {
-  const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from("messages")
-    .select("*")
-    .eq("conversation_id", convId)
-    .or(`expires_at.is.null,expires_at.gt.${new Date().toISOString()}`)
-    .order("created_at", { ascending: true });
+  // RPC : masque l'URL des snaps non ouverts + filtre les expirés côté serveur
+  const { data, error } = await getSupabase().rpc("fetch_messages", { conv: convId });
   if (error) throw error;
   return (data as Message[]) ?? [];
+}
+
+/** 📸 ouvre un snap vue unique — renvoie l'URL (visible 8 s puis purgé). */
+export async function openSnap(messageId: string): Promise<string | null> {
+  const { data, error } = await getSupabase().rpc("open_snap", { msg: messageId });
+  if (error) throw error;
+  return (data as { image_url: string | null })?.image_url ?? null;
 }
 
 /** 🔥 règle le mode éphémère d'une conversation (off | read | 24h). */
@@ -1102,7 +1104,8 @@ export async function sendMessage(
   convId: string,
   senderId: string,
   body: string,
-  imageUrl?: string | null
+  imageUrl?: string | null,
+  viewOnce = false
 ): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.from("messages").insert({
@@ -1110,6 +1113,7 @@ export async function sendMessage(
     sender_id: senderId,
     body: body || null,
     image_url: imageUrl ?? null,
+    view_once: viewOnce,
   });
   if (error) throw error;
 }

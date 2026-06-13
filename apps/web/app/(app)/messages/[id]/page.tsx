@@ -16,6 +16,7 @@ import {
   fetchConversationMembers,
   fetchMessages,
   markConversationRead,
+  openSnap,
   sendMessage,
   setEphemeralMode,
   uploadMedia,
@@ -47,6 +48,10 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
   const [ephemeral, setEphemeral] = useState<EphemeralMode>("off");
   const [ephemeralOpen, setEphemeralOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  // 📸 snaps
+  const [snapDraft, setSnapDraft] = useState<{ file: File; url: string } | null>(null);
+  const [snapViewOnce, setSnapViewOnce] = useState(true);
+  const [snapView, setSnapView] = useState<{ url: string; left: number } | null>(null);
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -151,6 +156,17 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     return () => clearInterval(t);
   }, [ephemeral, messages]);
 
+  // 📸 décompte de la visionneuse de snap (8 s) puis fermeture
+  useEffect(() => {
+    if (!snapView) return;
+    if (snapView.left <= 0) {
+      setSnapView(null);
+      return;
+    }
+    const t = setTimeout(() => setSnapView((s) => (s ? { ...s, left: s.left - 1 } : null)), 1000);
+    return () => clearTimeout(t);
+  }, [snapView]);
+
   async function pickEphemeral(mode: EphemeralMode) {
     setEphemeral(mode);
     setEphemeralOpen(false);
@@ -191,15 +207,49 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     }
   }
 
-  async function sendImage(f: File | null) {
-    if (!meId || !f) return;
+  // sélection d'une photo -> ouvre l'aperçu (choix vue unique avant envoi)
+  function pickImage(f: File | null) {
+    if (!f) return;
+    setSnapViewOnce(true);
+    setSnapDraft({ file: f, url: URL.createObjectURL(f) });
+    if (fileRef.current) fileRef.current.value = "";
+  }
+
+  async function sendSnap() {
+    if (!meId || !snapDraft) return;
+    const { file, url: objUrl } = snapDraft;
+    const viewOnce = snapViewOnce;
+    setSnapDraft(null);
+    URL.revokeObjectURL(objUrl);
     setUploading(true);
     try {
-      const url = await uploadMedia(f, meId);
-      await sendMessage(id, meId, "", url);
+      const url = await uploadMedia(file, meId);
+      await sendMessage(id, meId, "", url, viewOnce);
+      const me = profile?.display_name || profile?.username || "Whozin";
+      const recipients = isGroup
+        ? [...membersById.keys()].filter((uid) => uid !== meId)
+        : other
+          ? [other.id]
+          : [];
+      for (const uid of recipients) {
+        pushNotify(uid, { title: isGroup ? `${me} · ${groupTitle}` : me, body: viewOnce ? "📸 Photo vue unique" : "📷 Photo", url: `/messages/${id}`, tag: `msg-${id}` }, id);
+      }
     } finally {
       setUploading(false);
-      if (fileRef.current) fileRef.current.value = "";
+    }
+  }
+
+  // 📸 ouvrir un snap reçu : récupère l'URL (8 s) puis le retire localement
+  async function viewSnap(messageId: string) {
+    try {
+      const url = await openSnap(messageId);
+      if (!url) return;
+      setSnapView({ url, left: 8 });
+      setMessages((prev) =>
+        prev.map((x) => (x.id === messageId ? { ...x, opened_at: new Date().toISOString() } : x))
+      );
+    } catch {
+      /* ignore */
     }
   }
 
@@ -324,6 +374,34 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
                     )}
                     {m.poll_id ? (
                       <PollCard pollId={m.poll_id} />
+                    ) : m.view_once ? (
+                      // 📸 snap vue unique
+                      mine ? (
+                        <span
+                          className="flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-[13px] font-semibold"
+                          style={{ background: "var(--surface-2)", color: "var(--text-dim)" }}
+                        >
+                          📸 {m.opened_at
+                            ? (locale === "fr" ? "Photo ouverte" : "Photo opened")
+                            : (locale === "fr" ? "Photo vue unique envoyée" : "View-once photo sent")}
+                        </span>
+                      ) : m.opened_at ? (
+                        <span
+                          className="flex items-center gap-2 rounded-2xl px-3.5 py-2.5 text-[13px] font-semibold"
+                          style={{ background: "var(--surface-2)", color: "var(--text-dim)" }}
+                        >
+                          📸 {locale === "fr" ? "Photo ouverte" : "Opened"}
+                        </span>
+                      ) : (
+                        <button
+                          onClick={() => viewSnap(m.id)}
+                          className="pressable flex items-center gap-2.5 rounded-2xl px-4 py-3 text-sm font-bold"
+                          style={{ background: "rgba(255,46,99,.12)", border: "1px solid var(--brand)", color: "var(--brand)" }}
+                        >
+                          <span className="text-lg">📸</span>
+                          {locale === "fr" ? "Photo · appuie pour voir" : "Photo · tap to view"}
+                        </button>
+                      )
                     ) : m.image_url ? (
                       <span className="overflow-hidden rounded-2xl">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -433,7 +511,7 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
               accept="image/*"
               capture="environment"
               className="hidden"
-              onChange={(e) => sendImage(e.target.files?.[0] ?? null)}
+              onChange={(e) => pickImage(e.target.files?.[0] ?? null)}
             />
             <button
               onClick={() => fileRef.current?.click()}
@@ -476,6 +554,72 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
 
       {pollOpen && (
         <PollComposer convId={id} onClose={() => setPollOpen(false)} onCreated={() => setPollOpen(false)} />
+      )}
+
+      {/* 📸 aperçu avant envoi : choix vue unique */}
+      {snapDraft && (
+        <div className="fixed inset-0 z-[90] flex flex-col bg-black">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={snapDraft.url} alt="" className="min-h-0 flex-1 object-contain" />
+          <div className="p-4 pb-[max(20px,env(safe-area-inset-bottom))]">
+            <button
+              onClick={() => setSnapViewOnce((v) => !v)}
+              className="pressable mb-3 flex w-full items-center justify-between rounded-2xl border px-4 py-3"
+              style={{
+                borderColor: snapViewOnce ? "var(--brand)" : "rgba(255,255,255,.2)",
+                background: snapViewOnce ? "rgba(255,46,99,.14)" : "rgba(255,255,255,.06)",
+              }}
+            >
+              <span className="flex items-center gap-2 text-sm font-bold text-white">
+                📸 {locale === "fr" ? "Vue unique" : "View once"}
+              </span>
+              <span
+                className="flex h-6 w-11 items-center rounded-full px-0.5 transition-colors"
+                style={{ background: snapViewOnce ? "var(--brand)" : "rgba(255,255,255,.25)" }}
+              >
+                <span
+                  className="h-5 w-5 rounded-full bg-white transition-transform"
+                  style={{ transform: snapViewOnce ? "translateX(20px)" : "none" }}
+                />
+              </span>
+            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => {
+                  URL.revokeObjectURL(snapDraft.url);
+                  setSnapDraft(null);
+                }}
+                className="flex-1 rounded-full border border-white/20 py-3 text-sm font-semibold text-white"
+              >
+                {locale === "fr" ? "Annuler" : "Cancel"}
+              </button>
+              <button
+                onClick={sendSnap}
+                disabled={uploading}
+                className="brand-gradient pressable flex-[2] rounded-full py-3 font-display text-sm font-bold text-white disabled:opacity-60"
+              >
+                {uploading ? "…" : snapViewOnce ? (locale === "fr" ? "Envoyer le snap 📸" : "Send snap 📸") : (locale === "fr" ? "Envoyer la photo" : "Send photo")}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📸 visionneuse de snap : 8 s puis disparu */}
+      {snapView && (
+        <div
+          className="fixed inset-0 z-[95] flex flex-col bg-black"
+          onClick={() => setSnapView(null)}
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={snapView.url} alt="" className="min-h-0 flex-1 object-contain" />
+          <div className="absolute right-4 top-[max(16px,env(safe-area-inset-top))] flex h-10 w-10 items-center justify-center rounded-full bg-black/60 font-display text-base font-bold text-white">
+            {snapView.left}
+          </div>
+          <p className="pb-[max(20px,env(safe-area-inset-bottom))] pt-3 text-center text-xs text-white/60">
+            {locale === "fr" ? "📸 Cette photo disparaît dans quelques secondes" : "📸 This photo vanishes in seconds"}
+          </p>
+        </div>
       )}
 
       {ephemeralOpen && (

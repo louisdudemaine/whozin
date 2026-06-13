@@ -110,6 +110,9 @@ export interface Message {
   read_at: string | null;
   /** 🔥 si éphémère : instant de disparition (le client filtre, le cron purge) */
   expires_at?: string | null;
+  /** 📸 photo vue unique (snap) */
+  view_once?: boolean;
+  opened_at?: string | null;
 }
 
 export interface PollOption {
