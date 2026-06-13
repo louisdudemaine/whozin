@@ -12,6 +12,7 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import * as ScreenCapture from "expo-screen-capture";
 import type { Message, Profile } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { getSupabase } from "@/lib/supabase";
@@ -21,6 +22,7 @@ import {
   fetchConversation,
   fetchMessages,
   markConversationRead,
+  notifyScreenshot,
   sendMessage,
   setEphemeralMode,
 } from "@/lib/data";
@@ -150,6 +152,14 @@ export default function Thread() {
     return () => clearInterval(t);
   }, []);
 
+  // 🚨 vraie détection de capture d'écran (natif) -> signale l'autre
+  useEffect(() => {
+    const sub = ScreenCapture.addScreenshotListener(() => {
+      notifyScreenshot(convId).catch(() => {});
+    });
+    return () => sub.remove();
+  }, [convId]);
+
   const send = useCallback(async () => {
     if (!meId || !text.trim()) return;
     const body = text.trim();
@@ -181,6 +191,13 @@ export default function Thread() {
         onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
         renderItem={({ item }) => {
           const mine = item.sender_id === meId;
+          if (item.kind === "screenshot") {
+            return (
+              <Text style={{ color: C.textDim, fontSize: 11, fontWeight: "700", textAlign: "center", paddingVertical: 4 }}>
+                📸 {mine ? "Tu as" : (other?.display_name || other?.username) + " a"} fait une capture d'écran
+              </Text>
+            );
+          }
           const secsLeft = item.expires_at
             ? Math.max(0, Math.round((new Date(item.expires_at).getTime() - now) / 1000))
             : null;

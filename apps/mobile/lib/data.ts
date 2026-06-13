@@ -212,3 +212,7 @@ export async function unreadMessagesCount(meId: string): Promise<number> {
     .is("read_at", null);
   return count ?? 0;
 }
+
+export async function notifyScreenshot(convId: string): Promise<void> {
+  await getSupabase().rpc("notify_screenshot", { conv: convId });
+}

@@ -113,6 +113,8 @@ export interface Message {
   /** 📸 photo vue unique (snap) */
   view_once?: boolean;
   opened_at?: string | null;
+  /** 🚨 'screenshot' = message système « X a fait une capture » */
+  kind?: "text" | "screenshot";
 }
 
 export interface PollOption {

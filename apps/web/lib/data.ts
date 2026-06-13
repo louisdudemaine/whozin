@@ -1251,3 +1251,8 @@ export async function setMove(body: string, emoji: string | null): Promise<void>
 export async function clearMove(): Promise<void> {
   await getSupabase().rpc("clear_move");
 }
+
+/** 🚨 signale une capture d'écran dans la conversation (message système). */
+export async function notifyScreenshot(convId: string): Promise<void> {
+  await getSupabase().rpc("notify_screenshot", { conv: convId });
+}

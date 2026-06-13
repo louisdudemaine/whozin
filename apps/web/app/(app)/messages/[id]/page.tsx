@@ -16,6 +16,7 @@ import {
   fetchConversationMembers,
   fetchMessages,
   markConversationRead,
+  notifyScreenshot,
   openSnap,
   sendMessage,
   setEphemeralMode,
@@ -155,6 +156,17 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     }, 1000);
     return () => clearInterval(t);
   }, [ephemeral, messages]);
+
+  // 🚨 détection best-effort de capture (PrintScreen sur Windows/Linux ;
+  // détection complète = app native). Signale l'autre dans la conversation.
+  useEffect(() => {
+    if (!meId) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "PrintScreen") notifyScreenshot(id).catch(() => {});
+    };
+    window.addEventListener("keyup", onKey);
+    return () => window.removeEventListener("keyup", onKey);
+  }, [id, meId]);
 
   // 📸 décompte de la visionneuse de snap (8 s) puis fermeture
   useEffect(() => {
@@ -356,6 +368,17 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
             {messages.map((m) => {
               const mine = m.sender_id === meId;
               const sender = isGroup && !mine ? membersById.get(m.sender_id) : undefined;
+              // 🚨 ligne système : capture d'écran
+              if (m.kind === "screenshot") {
+                const who = mine
+                  ? locale === "fr" ? "Tu as" : "You"
+                  : `${(isGroup ? sender : other)?.display_name || (isGroup ? sender : other)?.username || ""} ${locale === "fr" ? "a" : ""}`;
+                return (
+                  <p key={m.id} className="py-1 text-center text-[11px] font-semibold text-text-dim">
+                    📸 {who} {locale === "fr" ? "fait une capture d'écran" : (mine ? "took a screenshot" : "took a screenshot")}
+                  </p>
+                );
+              }
               const secsLeft = m.expires_at
                 ? Math.max(0, Math.round((new Date(m.expires_at).getTime() - now) / 1000))
                 : null;
