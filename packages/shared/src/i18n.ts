@@ -82,6 +82,9 @@ export const messages = {
       liked: "a aimé ta publication",
       commented: "a commenté ta publication",
       joinedCheckin: "s'est joint·e à toi",
+      movePosted: "cherche quelque chose ce soir — réponds 🌃",
+      crewOut: "vient de sortir — ton crew bouge 👯",
+      hotPlace: "ça décolle près de toi 🔥",
     },
     common: {
       loading: "Chargement…",
@@ -172,6 +175,9 @@ export const messages = {
       liked: "liked your post",
       commented: "commented on your post",
       joinedCheckin: "joined you",
+      movePosted: "is looking for something tonight — reply 🌃",
+      crewOut: "just went out — your crew is moving 👯",
+      hotPlace: "it's heating up near you 🔥",
     },
     common: {
       loading: "Loading…",

@@ -254,7 +254,14 @@ export interface RecommendedPlace extends NearbyPlace {
   score: number;
 }
 
-export type NotificationType = "follow" | "like" | "comment" | "checkin_join";
+export type NotificationType =
+  | "follow"
+  | "like"
+  | "comment"
+  | "checkin_join"
+  | "move"
+  | "crew_out"
+  | "hot";
 
 export interface AppNotification {
   id: string;

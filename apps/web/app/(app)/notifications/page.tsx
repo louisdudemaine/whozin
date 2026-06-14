@@ -12,6 +12,9 @@ const ICON: Record<NotificationType, string> = {
   like: "❤️",
   comment: "💬",
   checkin_join: "📍",
+  move: "🌃",
+  crew_out: "👯",
+  hot: "🔥",
 };
 
 export default function NotificationsPage() {
@@ -39,6 +42,12 @@ export default function NotificationsPage() {
         return t.notifications.commented;
       case "checkin_join":
         return t.notifications.joinedCheckin;
+      case "move":
+        return t.notifications.movePosted;
+      case "crew_out":
+        return t.notifications.crewOut;
+      case "hot":
+        return t.notifications.hotPlace;
     }
   }
 
