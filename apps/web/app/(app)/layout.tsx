@@ -8,6 +8,7 @@ import { CallOverlay } from "@/components/CallOverlay";
 import { MfaChallenge } from "@/components/MfaChallenge";
 import { Onboarding } from "@/components/Onboarding";
 import { PushBanner } from "@/components/PushBanner";
+import { ToastHost } from "@/lib/toast";
 import { getSupabase } from "@/lib/supabase";
 import { BottomNav } from "@/components/BottomNav";
 import { AuthScreen } from "@/components/AuthScreen";
@@ -98,6 +99,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       />
       <CallOverlay />
       <PushBanner />
+      <ToastHost />
     </CallProvider>
   );
 }

@@ -16,6 +16,7 @@ import { BeaconStrip } from "@/components/BeaconStrip";
 import { GuardianStrips } from "@/components/Guardian";
 import { MoveStrip } from "@/components/MoveStrip";
 import { ForYou } from "@/components/ForYou";
+import { FeedSkeleton } from "@/components/Skeleton";
 import { TravelPill } from "@/components/TravelPill";
 
 export default function FeedPage() {
@@ -127,7 +128,7 @@ export default function FeedPage() {
       </header>
 
       {loading ? (
-        <p className="py-16 text-center text-sm text-text-dim">{t.common.loading}</p>
+        <FeedSkeleton />
       ) : (
         <>
           {recapStops > 0 && (

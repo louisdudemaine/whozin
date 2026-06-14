@@ -340,6 +340,49 @@ body {
   transform: scale(0.97);
 }
 
+/* ── ✨ Squelettes shimmer ── */
+.skeleton {
+  position: relative;
+  overflow: hidden;
+  background: var(--surface-2);
+}
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    100deg,
+    transparent 30%,
+    light-dark(rgba(26, 20, 38, 0.06), rgba(255, 255, 255, 0.06)) 50%,
+    transparent 70%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -100% 0;
+  }
+}
+
+/* ── ✨ Toast : descend du haut ── */
+@keyframes toast-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.animate-slide-down {
+  animation: toast-slide-down 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 ::-webkit-scrollbar {
   width: 0;
   height: 0;

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { hapticImpact, hapticTap } from "@/lib/haptics";
 
 function Icon({ name, active }: { name: string; active: boolean }) {
   const c = active ? "var(--text)" : "var(--text-dim)";
@@ -66,7 +67,10 @@ export function BottomNav({ unread = 0 }: { unread?: number }) {
 
       {/* Check-in / Créer : le seul élément du dock qui respire en permanence */}
       <button
-        onClick={openCreate}
+        onClick={() => {
+          hapticImpact();
+          openCreate();
+        }}
         aria-label="Partager"
         className="pressable -mt-7 flex h-[52px] w-[52px] items-center justify-center rounded-full text-2xl font-bold text-white"
         style={{
@@ -93,7 +97,7 @@ export function BottomNav({ unread = 0 }: { unread?: number }) {
 
 function Tab({ href, icon, active }: { href: string; icon: string; active: boolean }) {
   return (
-    <Link href={href} className="relative flex h-full w-12 items-center justify-center">
+    <Link href={href} onClick={() => hapticTap()} className="relative flex h-full w-12 items-center justify-center">
       <NavGlow active={active} />
       <Icon name={icon} active={active} />
       {active && (

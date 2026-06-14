@@ -13,6 +13,7 @@ import {
   setMove,
 } from "@/lib/data";
 import { Avatar } from "./Avatar";
+import { toast } from "@/lib/toast";
 
 const EMOJIS = ["🍻", "🍜", "🪩", "☕", "🎶", "🏀", "🎬", "🌙", "🔥", "✨"];
 
@@ -47,6 +48,7 @@ export function MoveStrip() {
       setComposing(false);
       setText("");
       await load();
+      toast(fr ? "Ton move est lancé 🌃" : "Your move is live 🌃");
     } finally {
       setBusy(false);
     }

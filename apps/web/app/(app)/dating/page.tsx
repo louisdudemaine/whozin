@@ -13,6 +13,7 @@ import {
   upsertDatingProfile,
 } from "@/lib/data";
 import { Avatar } from "@/components/Avatar";
+import { hapticImpact } from "@/lib/haptics";
 
 type View = "loading" | "dob" | "minor" | "onboarding" | "deck";
 
@@ -108,7 +109,10 @@ export default function DatingPage() {
     const who = current;
     setI((n) => n + 1);
     const res = await datingLike(who.id);
-    if (res.matched) setMatch({ who, convId: res.conversation_id });
+    if (res.matched) {
+      hapticImpact();
+      setMatch({ who, convId: res.conversation_id });
+    }
   }
   function pass() {
     setI((n) => n + 1);

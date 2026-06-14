@@ -6,6 +6,7 @@ import { getCategory, timeAgo, type Post } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { toggleLike } from "@/lib/data";
+import { hapticSuccess } from "@/lib/haptics";
 import { Avatar } from "./Avatar";
 import { CommentsSheet } from "./CommentsSheet";
 import { SafetyMenu } from "./SafetyMenu";
@@ -23,6 +24,7 @@ export function PostCard({ post }: { post: Post }) {
   async function onLike() {
     if (!profile) return;
     const next = !liked;
+    if (next) hapticSuccess();
     setLiked(next);
     setLikeCount((c) => c + (next ? 1 : -1));
     try {
