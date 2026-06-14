@@ -2,7 +2,7 @@
   "name": "whos-in",
   "version": "0.1.0",
   "private": true,
-  "description": "Who's In — réseau social temps réel géolocalisé / real-time geolocated social network",
+  "description": "Who's In \u2014 r\u00e9seau social temps r\u00e9el g\u00e9olocalis\u00e9 / real-time geolocated social network",
   "workspaces": [
     "packages/*",
     "apps/*"
@@ -14,5 +14,13 @@
   },
   "engines": {
     "node": ">=20"
+  },
+  "devDependencies": {
+    "expo-router": "6.0.24"
+  },
+  "overrides": {
+    "react-native": "0.81.5",
+    "react": "19.1.0",
+    "react-dom": "19.1.0"
   }
 }
