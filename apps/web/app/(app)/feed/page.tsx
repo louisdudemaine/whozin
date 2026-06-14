@@ -16,6 +16,7 @@ import { BeaconStrip } from "@/components/BeaconStrip";
 import { GuardianStrips } from "@/components/Guardian";
 import { MoveStrip } from "@/components/MoveStrip";
 import { ForYou } from "@/components/ForYou";
+import { FirstSteps } from "@/components/FirstSteps";
 import { FeedSkeleton } from "@/components/Skeleton";
 import { TravelPill } from "@/components/TravelPill";
 
@@ -145,6 +146,7 @@ export default function FeedPage() {
               <span className="text-text-dim">→</span>
             </Link>
           )}
+          <FirstSteps />
           <ForYou />
           <MoveStrip />
           <GuardianStrips />

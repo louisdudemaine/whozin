@@ -1279,3 +1279,18 @@ export async function fetchForYou(): Promise<BrainSignal[]> {
   if (error) return [];
   return (data ?? []) as BrainSignal[];
 }
+
+// ===== 🎯 Activation (1re soirée) =====
+
+export interface ActivationStatus {
+  follows: number;
+  has_move: boolean;
+  has_checkin: boolean;
+  is_new: boolean;
+}
+
+export async function fetchActivation(): Promise<ActivationStatus | null> {
+  const { data, error } = await getSupabase().rpc("activation_status");
+  if (error) return null;
+  return (data ?? null) as ActivationStatus | null;
+}
