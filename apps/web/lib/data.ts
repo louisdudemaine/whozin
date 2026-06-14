@@ -1260,3 +1260,22 @@ export async function clearMove(): Promise<void> {
 export async function notifyScreenshot(convId: string): Promise<void> {
   await getSupabase().rpc("notify_screenshot", { conv: convId });
 }
+
+// ===== 🧠 Le Cerveau Whozin =====
+
+export interface BrainSignal {
+  kind: "move" | "crew" | "hot" | "beacon";
+  emoji: string;
+  title: string;
+  subtitle: string;
+  href: string;
+  username?: string;
+  avatar_url?: string | null;
+  score: number;
+}
+
+export async function fetchForYou(): Promise<BrainSignal[]> {
+  const { data, error } = await getSupabase().rpc("for_you_now");
+  if (error) return [];
+  return (data ?? []) as BrainSignal[];
+}
