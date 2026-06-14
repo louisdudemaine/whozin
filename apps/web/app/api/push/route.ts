@@ -63,10 +63,8 @@ export async function POST(req: NextRequest) {
     if (!isMember) return NextResponse.json({ error: "non autorisé" }, { status: 403 });
   }
 
-  const { data: subs } = await supabase
-    .from("push_subscriptions")
-    .select("endpoint,p256dh,auth")
-    .eq("user_id", target);
+  // anti-énumération : RPC qui renvoie l'abonnement de CETTE cible seulement (si non bloqué)
+  const { data: subs } = await supabase.rpc("push_targets", { target });
 
   const payload = JSON.stringify({
     title: String(body.title).slice(0, 80),
