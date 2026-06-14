@@ -65,6 +65,8 @@ export async function POST(req: NextRequest) {
 
   // anti-énumération : RPC qui renvoie l'abonnement de CETTE cible seulement (si non bloqué)
   const { data: subs } = await supabase.rpc("push_targets", { target });
+  type Sub = { endpoint: string; p256dh: string; auth: string };
+  const subList = (subs ?? []) as Sub[];
 
   const payload = JSON.stringify({
     title: String(body.title).slice(0, 80),
@@ -75,7 +77,7 @@ export async function POST(req: NextRequest) {
 
   let sent = 0;
   await Promise.all(
-    (subs ?? []).map(async (s) => {
+    subList.map(async (s) => {
       try {
         await webpush.sendNotification(
           { endpoint: s.endpoint, keys: { p256dh: s.p256dh, auth: s.auth } },
