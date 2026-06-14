@@ -558,6 +558,7 @@ export interface PartnerEvent {
   title: string;
   description: string | null;
   segment: string;
+  event_type: string | null;
   starts_at: string;
   price_min: number | null;
   ticket_url: string | null;
@@ -567,7 +568,7 @@ export interface PartnerEvent {
 export async function createPartnerEvent(
   meId: string,
   placeId: string,
-  ev: { title: string; description?: string; segment: string; starts_at: string; price_min?: number | null; ticket_url?: string | null }
+  ev: { title: string; description?: string; segment: string; event_type?: string | null; starts_at: string; price_min?: number | null; ticket_url?: string | null }
 ): Promise<void> {
   const { error } = await getSupabase().from("partner_events").insert({
     place_id: placeId,
@@ -575,6 +576,7 @@ export async function createPartnerEvent(
     title: ev.title,
     description: ev.description || null,
     segment: ev.segment,
+    event_type: ev.segment === "pro" ? ev.event_type || null : null,
     starts_at: ev.starts_at,
     price_min: ev.price_min ?? null,
     ticket_url: ev.ticket_url || null,

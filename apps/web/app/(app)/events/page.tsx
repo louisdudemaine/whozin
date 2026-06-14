@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { MONTREAL } from "@whosin/shared";
+import { getProEventType, MONTREAL } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
@@ -12,6 +12,8 @@ import type { WhozinEvent } from "@/app/api/events/route";
 interface MergedEvent extends WhozinEvent {
   /** événement créé par un partenaire Whozin (vs billetterie externe) */
   isPartner?: boolean;
+  /** type pro précis (5à7, conférence…) */
+  eventType?: string | null;
 }
 
 type Segment = WhozinEvent["segment"];
@@ -81,6 +83,7 @@ export default function EventsPage() {
           lat: e.place?.lat ?? null,
           lng: e.place?.lng ?? null,
           isPartner: true,
+          eventType: e.event_type,
         }));
         setEvents([...internal, ...(ev.events ?? [])]);
         setSource(ev.source ?? "demo");
@@ -196,7 +199,17 @@ export default function EventsPage() {
                     </span>
                   )}
                 </p>
-                <h2 className="mt-0.5 text-base font-black leading-snug">{e.name}</h2>
+                <h2 className="mt-0.5 flex flex-wrap items-center gap-1.5 text-base font-black leading-snug">
+                  {e.name}
+                  {e.eventType && getProEventType(e.eventType) && (
+                    <span
+                      className="rounded-full px-2 py-0.5 text-[10px] font-bold"
+                      style={{ background: "rgba(77,159,255,.14)", color: "#4d9fff" }}
+                    >
+                      {getProEventType(e.eventType)!.emoji} {fr ? getProEventType(e.eventType)!.fr : getProEventType(e.eventType)!.en}
+                    </span>
+                  )}
+                </h2>
                 <p className="mt-0.5 text-sm text-text-dim">
                   {e.venue}
                   {e.city ? ` · ${e.city}` : ""}

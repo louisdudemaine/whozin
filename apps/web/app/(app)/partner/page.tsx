@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { getCategory, MONTREAL, type NearbyPlace } from "@whosin/shared";
+import { getCategory, getProEventType, MONTREAL, PRO_EVENT_TYPES, type NearbyPlace } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import {
@@ -46,6 +46,7 @@ export default function PartnerPage() {
   // formulaire événement
   const [title, setTitle] = useState("");
   const [segment, setSegment] = useState("music");
+  const [eventType, setEventType] = useState("");
   const [when, setWhen] = useState("");
   const [price, setPrice] = useState("");
   const [ticketUrl, setTicketUrl] = useState("");
@@ -85,6 +86,7 @@ export default function PartnerPage() {
       await createPartnerEvent(profile.id, partner.place_id, {
         title: title.trim(),
         segment,
+        event_type: segment === "pro" ? eventType || null : null,
         starts_at: new Date(when).toISOString(),
         price_min: price ? Number(price) : null,
         ticket_url: ticketUrl.trim() || null,
@@ -93,6 +95,7 @@ export default function PartnerPage() {
       setWhen("");
       setPrice("");
       setTicketUrl("");
+      setEventType("");
       await load();
     } finally {
       setBusy(false);
@@ -265,6 +268,32 @@ export default function PartnerPage() {
                 </button>
               ))}
             </div>
+
+            {/* 💼 type précis pour les événements pro */}
+            {segment === "pro" && (
+              <div className="mt-2.5">
+                <p className="mb-1.5 text-[11px] font-bold uppercase tracking-wide text-text-dim">
+                  {fr ? "Type d'événement pro" : "Pro event type"}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {PRO_EVENT_TYPES.map((tp) => (
+                    <button
+                      key={tp.key}
+                      onClick={() => setEventType(tp.key)}
+                      className="pressable rounded-full border px-3 py-1.5 text-xs font-bold"
+                      style={{
+                        borderColor: eventType === tp.key ? "#4d9fff" : "var(--border)",
+                        background: eventType === tp.key ? "rgba(77,159,255,.14)" : "var(--surface-2)",
+                        color: eventType === tp.key ? "#4d9fff" : "var(--text)",
+                      }}
+                    >
+                      {tp.emoji} {fr ? tp.fr : tp.en}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <div className="mt-2.5 flex gap-2">
               <input
                 type="datetime-local"
@@ -305,7 +334,17 @@ export default function PartnerPage() {
                 {events.map((e) => (
                   <div key={e.id} className="flex items-center gap-3 rounded-xl bg-surface-2 px-3 py-2.5">
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-bold">{e.title}</p>
+                      <p className="flex items-center gap-1.5 truncate text-sm font-bold">
+                        {e.title}
+                        {e.event_type && getProEventType(e.event_type) && (
+                          <span
+                            className="shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-bold"
+                            style={{ background: "rgba(77,159,255,.14)", color: "#4d9fff" }}
+                          >
+                            {getProEventType(e.event_type)!.emoji} {fr ? getProEventType(e.event_type)!.fr : getProEventType(e.event_type)!.en}
+                          </span>
+                        )}
+                      </p>
                       <p className="text-xs text-text-dim">
                         {new Intl.DateTimeFormat(fr ? "fr-CA" : "en-CA", {
                           weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit",
