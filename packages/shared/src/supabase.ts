@@ -28,7 +28,9 @@ export function createSupabaseClient(opts: CreateClientOptions): SupabaseClient 
     auth: {
       persistSession,
       autoRefreshToken: persistSession,
-      detectSessionInUrl: persistSession,
+      // detectSessionInUrl exige un navigateur (window.location) : false dès qu'on a
+      // un storage custom (React Native = AsyncStorage) ou côté serveur.
+      detectSessionInUrl: storage ? false : persistSession,
       ...(storage ? { storage: storage as never } : {}),
     },
   });

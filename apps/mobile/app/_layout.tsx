@@ -4,6 +4,7 @@ import { ActivityIndicator, View } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { AuthProvider, useAuth } from "@/lib/auth";
 import { AuthScreen } from "@/components/AuthScreen";
+import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useC } from "@/lib/theme";
 
 function Gate() {
@@ -23,11 +24,13 @@ function Gate() {
 export default function RootLayout() {
   const C = useC();
   return (
-    <SafeAreaProvider>
-      <StatusBar style="light" />
-      <AuthProvider>
-        <Gate />
-      </AuthProvider>
-    </SafeAreaProvider>
+    <ErrorBoundary>
+      <SafeAreaProvider>
+        <StatusBar style="light" />
+        <AuthProvider>
+          <Gate />
+        </AuthProvider>
+      </SafeAreaProvider>
+    </ErrorBoundary>
   );
 }
