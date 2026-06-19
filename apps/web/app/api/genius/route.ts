@@ -12,6 +12,7 @@ export const runtime = "nodejs";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const MAX_BODY_BYTES = 8192;
 
 interface Stop {
   order: number;
@@ -31,7 +32,23 @@ const VIBE_CATS: Record<string, string[]> = {
   sportif: ["sport", "bar"],
 };
 
+function boundedNumber(value: unknown, fallback: number, min: number, max: number): number {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return fallback;
+  return Math.min(max, Math.max(min, parsed));
+}
+
+function cleanVibes(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return [...new Set(value.filter((v): v is string => typeof v === "string" && v in VIBE_CATS))].slice(0, 5);
+}
+
 export async function POST(req: NextRequest) {
+  const contentLength = Number(req.headers.get("content-length") ?? 0);
+  if (contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "payload trop volumineux" }, { status: 413 });
+  }
+
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!token) return NextResponse.json({ error: "auth requise" }, { status: 401 });
 
@@ -48,9 +65,10 @@ export async function POST(req: NextRequest) {
   } catch {
     return NextResponse.json({ error: "json invalide" }, { status: 400 });
   }
-  const lat = body.lat ?? 45.5019;
-  const lng = body.lng ?? -73.5674;
-  const vibes = (body.vibes ?? []).filter((v) => v in VIBE_CATS);
+  const lat = boundedNumber(body.lat, 45.5019, -90, 90);
+  const lng = boundedNumber(body.lng, -73.5674, -180, 180);
+  const people = Math.round(boundedNumber(body.people, 2, 1, 20));
+  const vibes = cleanVibes(body.vibes);
   const fr = body.locale !== "en";
 
   // données: lieux proches + affluence live, et goûts de l'utilisateur
@@ -138,7 +156,7 @@ export async function POST(req: NextRequest) {
               role: "user",
               content: `Tu es le concierge de soirée de Whozin (app sociale nightlife à Montréal). En ${fr ? "français québécois" : "English"}, 2-3 phrases max, ton complice et énergique (pas de hashtags), présente cet itinéraire de soirée: ${stops
                 .map((s) => `${s.time} ${s.name} (${s.category}${s.active ? `, ${s.active} sur place` : ""})`)
-                .join(" → ")}. Vibes demandées: ${vibes.join(", ") || "surprise"}. Groupe de ${body.people ?? 2}.`,
+                .join(" → ")}. Vibes demandées: ${vibes.join(", ") || "surprise"}. Groupe de ${people}.`,
             },
           ],
         }),

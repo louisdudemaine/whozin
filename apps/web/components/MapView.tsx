@@ -12,6 +12,81 @@ const STYLES = {
   light: "https://tiles.openfreemap.org/styles/positron",
 } as const;
 
+function assignStyles(el: HTMLElement, styles: Partial<CSSStyleDeclaration>) {
+  Object.assign(el.style, styles);
+}
+
+function createPlaceMarker(place: NearbyPlace) {
+  const cat = getCategory(place.category);
+  const active = place.active_checkins > 0;
+  const el = document.createElement("div");
+  el.className = "wi-marker";
+
+  const wrap = document.createElement("div");
+  assignStyles(wrap, {
+    position: "relative",
+    display: "flex",
+    flexDirection: "column",
+    alignItems: "center",
+  });
+
+  const icon = document.createElement("div");
+  if (active) icon.className = "wi-pulse";
+  icon.textContent = cat.emoji;
+  assignStyles(icon, {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    width: "42px",
+    height: "42px",
+    borderRadius: "50%",
+    background: cat.color,
+    border: "2px solid #0a0a0f",
+    fontSize: "20px",
+    boxShadow: "0 2px 8px rgba(0,0,0,.5)",
+  });
+  wrap.append(icon);
+
+  if (active) {
+    const badge = document.createElement("div");
+    badge.textContent = String(place.active_checkins);
+    assignStyles(badge, {
+      position: "absolute",
+      top: "-6px",
+      right: "-6px",
+      minWidth: "20px",
+      height: "20px",
+      padding: "0 5px",
+      borderRadius: "10px",
+      background: "#fff",
+      color: "#0a0a0f",
+      fontSize: "11px",
+      fontWeight: "800",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      border: `2px solid ${cat.color}`,
+    });
+    wrap.append(badge);
+  }
+
+  el.append(wrap);
+  return el;
+}
+
+function createUserMarker() {
+  const el = document.createElement("div");
+  assignStyles(el, {
+    width: "18px",
+    height: "18px",
+    borderRadius: "50%",
+    background: "#16d9c5",
+    border: "3px solid #0a0a0f",
+    boxShadow: "0 0 0 4px rgba(22,217,197,.3)",
+  });
+  return el;
+}
+
 export function MapView({
   places,
   userLoc,
@@ -74,28 +149,7 @@ export function MapView({
     markersRef.current = [];
 
     for (const place of places) {
-      const cat = getCategory(place.category);
-      const el = document.createElement("div");
-      el.className = "wi-marker";
-      const active = place.active_checkins > 0;
-      el.innerHTML = `
-        <div style="position:relative;display:flex;flex-direction:column;align-items:center">
-          <div class="${active ? "wi-pulse" : ""}" style="
-            display:flex;align-items:center;justify-content:center;
-            width:42px;height:42px;border-radius:50%;
-            background:${cat.color};border:2px solid #0a0a0f;
-            font-size:20px;box-shadow:0 2px 8px rgba(0,0,0,.5)">
-            ${cat.emoji}
-          </div>
-          ${
-            active
-              ? `<div style="position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;
-                  padding:0 5px;border-radius:10px;background:#fff;color:#0a0a0f;
-                  font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;
-                  border:2px solid ${cat.color}">${place.active_checkins}</div>`
-              : ""
-          }
-        </div>`;
+      const el = createPlaceMarker(place);
       el.addEventListener("click", (e) => {
         e.stopPropagation();
         onSelectRef.current(place);
@@ -115,10 +169,7 @@ export function MapView({
       userMarkerRef.current.setLngLat([userLoc.lng, userLoc.lat]);
       return;
     }
-    const el = document.createElement("div");
-    el.innerHTML = `<div style="width:18px;height:18px;border-radius:50%;background:#16d9c5;
-      border:3px solid #0a0a0f;box-shadow:0 0 0 4px rgba(22,217,197,.3)"></div>`;
-    userMarkerRef.current = new maplibregl.Marker({ element: el })
+    userMarkerRef.current = new maplibregl.Marker({ element: createUserMarker() })
       .setLngLat([userLoc.lng, userLoc.lat])
       .addTo(map);
   }, [userLoc]);

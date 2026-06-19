@@ -9,6 +9,10 @@ import { GuardianCard } from "@/components/Guardian";
 
 type Factor = { id: string; friendly_name?: string | null; status: string };
 
+function svgToDataUri(svg: string) {
+  return `data:image/svg+xml;charset=utf-8,${encodeURIComponent(svg)}`;
+}
+
 /** 🔐 Sécurité — 2FA TOTP (Google Authenticator, Authy, 1Password…). */
 export default function SecurityPage() {
   const { locale } = useT();
@@ -144,10 +148,13 @@ export default function SecurityPage() {
               <p className="text-sm text-text-dim">
                 {fr ? "1. Scanne ce code avec ton app d'authentification" : "1. Scan with your authenticator app"}
               </p>
-              <div
-                className="mx-auto mt-3 inline-block rounded-2xl bg-white p-3 [&>svg]:h-44 [&>svg]:w-44"
-                dangerouslySetInnerHTML={{ __html: qrSvg }}
-              />
+              <div className="mx-auto mt-3 inline-block rounded-2xl bg-white p-3">
+                <img
+                  src={svgToDataUri(qrSvg)}
+                  alt={fr ? "Code QR 2FA" : "2FA QR code"}
+                  className="h-44 w-44"
+                />
+              </div>
               {secret && (
                 <p className="mt-2 break-all rounded-xl bg-surface-2 px-3 py-2 text-[11px] text-text-dim">
                   {fr ? "Ou entre la clé : " : "Or enter key: "}

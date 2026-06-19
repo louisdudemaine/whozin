@@ -13,8 +13,30 @@ export const runtime = "nodejs";
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+const MAX_BODY_BYTES = 4096;
+
+function safeAppPath(value: unknown): string {
+  if (typeof value !== "string") return "/feed";
+  if (!value.startsWith("/") || value.startsWith("//") || value.includes("\\")) return "/feed";
+  try {
+    const url = new URL(value, "https://whozin.app");
+    return url.origin === "https://whozin.app" ? `${url.pathname}${url.search}${url.hash}` : "/feed";
+  } catch {
+    return "/feed";
+  }
+}
+
+function clipped(value: unknown, max: number): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+}
 
 export async function POST(req: NextRequest) {
+  const contentLength = Number(req.headers.get("content-length") ?? 0);
+  if (contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "payload trop volumineux" }, { status: 413 });
+  }
+
   const priv = process.env.VAPID_PRIVATE_KEY;
   const pub = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
   if (!priv || !pub) {
@@ -53,6 +75,12 @@ export async function POST(req: NextRequest) {
   if (!target || !body.title) {
     return NextResponse.json({ error: "target/title requis" }, { status: 400 });
   }
+  if (!UUID_RE.test(target)) {
+    return NextResponse.json({ error: "target invalide" }, { status: 400 });
+  }
+  if (conversationId && !UUID_RE.test(conversationId)) {
+    return NextResponse.json({ error: "conversation invalide" }, { status: 400 });
+  }
   if (target === sender.id) return NextResponse.json({ sent: 0 });
 
   // anti-abus : l'expéditeur doit participer à la conversation invoquée
@@ -69,10 +97,10 @@ export async function POST(req: NextRequest) {
   const subList = (subs ?? []) as Sub[];
 
   const payload = JSON.stringify({
-    title: String(body.title).slice(0, 80),
-    body: String(body.body ?? "").slice(0, 160),
-    url: typeof body.url === "string" && body.url.startsWith("/") ? body.url : "/feed",
-    tag: body.tag,
+    title: clipped(body.title, 80),
+    body: clipped(body.body, 160),
+    url: safeAppPath(body.url),
+    tag: clipped(body.tag, 64) || undefined,
   });
 
   let sent = 0;

@@ -15,6 +15,29 @@ interface RecapPayload {
   locale?: string;
 }
 
+const MAX_BODY_BYTES = 8192;
+
+function cleanText(value: unknown, max: number): string {
+  return String(value ?? "").replace(/\s+/g, " ").trim().slice(0, max);
+}
+
+function normalizePayload(input: RecapPayload): RecapPayload {
+  return {
+    locale: input.locale === "en" ? "en" : "fr",
+    likes: Math.max(0, Math.min(9999, Number(input.likes) || 0)),
+    matches: Math.max(0, Math.min(9999, Number(input.matches) || 0)),
+    crossedNames: Array.isArray(input.crossedNames)
+      ? input.crossedNames.slice(0, 25).map((name) => cleanText(name, 60)).filter(Boolean)
+      : [],
+    stops: Array.isArray(input.stops)
+      ? input.stops.slice(0, 12).map((stop) => ({
+          name: cleanText(stop?.name, 80),
+          category: cleanText(stop?.category, 40),
+        })).filter((stop) => stop.name)
+      : [],
+  };
+}
+
 function fallbackNarration(p: RecapPayload, fr: boolean): string {
   const n = p.stops?.length ?? 0;
   const c = p.crossedNames?.length ?? 0;
@@ -45,9 +68,14 @@ function fallbackNarration(p: RecapPayload, fr: boolean): string {
 }
 
 export async function POST(req: NextRequest) {
+  const contentLength = Number(req.headers.get("content-length") ?? 0);
+  if (contentLength > MAX_BODY_BYTES) {
+    return NextResponse.json({ error: "payload trop volumineux" }, { status: 413 });
+  }
+
   let body: RecapPayload;
   try {
-    body = await req.json();
+    body = normalizePayload(await req.json());
   } catch {
     return NextResponse.json({ error: "json invalide" }, { status: 400 });
   }

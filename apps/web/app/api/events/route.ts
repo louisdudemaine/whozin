@@ -27,6 +27,12 @@ const TM_SEGMENT: Record<string, WhozinEvent["segment"]> = {
   "Arts & Theatre": "arts",
 };
 
+function boundedCoord(value: string | null, fallback: number, min: number, max: number): string {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed)) return String(fallback);
+  return String(Math.min(max, Math.max(min, parsed)));
+}
+
 function demoEvents(): WhozinEvent[] {
   const day = 24 * 3600 * 1000;
   const base = Date.now();
@@ -65,8 +71,8 @@ function demoEvents(): WhozinEvent[] {
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const lat = searchParams.get("lat") ?? "45.5019";
-  const lng = searchParams.get("lng") ?? "-73.5674";
+  const lat = boundedCoord(searchParams.get("lat"), 45.5019, -90, 90);
+  const lng = boundedCoord(searchParams.get("lng"), -73.5674, -180, 180);
   const apiKey = process.env.TICKETMASTER_API_KEY;
 
   if (!apiKey) {
