@@ -12,17 +12,11 @@ import { timeAgo, type ConversationPreview } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import {
   acceptConversation,
+  avatarUri,
   declineConversation,
   fetchConversations,
 } from "@/lib/data";
 import { useC } from "@/lib/theme";
-
-function avatarUri(p?: { avatar_url?: string | null; username?: string } | null) {
-  return (
-    p?.avatar_url ||
-    `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(p?.username || "anon")}`
-  );
-}
 
 export default function Inbox() {
   const C = useC();
@@ -99,7 +93,7 @@ export default function Inbox() {
           <Image source={{ uri: avatarUri(item.other) }} style={{ width: 52, height: 52, borderRadius: 26, backgroundColor: C.surface2 }} />
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
-              <Text style={{ color: C.text, fontWeight: "700" }}>{item.other?.display_name || item.other?.username}</Text>
+              <Text style={{ color: C.text, fontWeight: "700" }}>{item.title || item.other?.display_name || item.other?.username}</Text>
               <Text style={{ color: C.textDim, fontSize: 12 }}>{timeAgo(item.last_message_at)}</Text>
             </View>
             <Text

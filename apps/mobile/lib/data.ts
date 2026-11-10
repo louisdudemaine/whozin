@@ -11,6 +11,14 @@ import { getSupabase } from "./supabase";
 
 const PROFILE_COLS = "id,username,display_name,avatar_url,bio,created_at";
 
+/** <Image> de React Native ne rend pas le SVG : on demande à DiceBear sa variante PNG. */
+export function avatarUri(p?: { avatar_url?: string | null; username?: string } | null) {
+  const uri =
+    p?.avatar_url ||
+    `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(p?.username || "anon")}`;
+  return uri.replace(/(api\.dicebear\.com\/[^/]+\/[^/]+)\/svg/, "$1/png");
+}
+
 export async function fetchNearby(lat: number, lng: number, radiusM = 8000): Promise<NearbyPlace[]> {
   const { data, error } = await getSupabase().rpc("places_nearby", {
     in_lat: lat,
@@ -132,7 +140,10 @@ export async function fetchConversations(meId: string): Promise<ConversationPrev
   if (error) throw error;
   const conversations = (convs ?? []) as Conversation[];
   if (conversations.length === 0) return [];
-  const otherIds = [...new Set(conversations.map((c) => (c.user_a === meId ? c.user_b : c.user_a)))];
+  // Un groupe n'a ni user_a ni user_b : un seul null dans .in() fait échouer TOUTE la requête.
+  const otherIds = [
+    ...new Set(conversations.map((c) => (c.user_a === meId ? c.user_b : c.user_a)).filter(Boolean)),
+  ];
   const convIds = conversations.map((c) => c.id);
   const [{ data: profiles }, { data: msgs }] = await Promise.all([
     supabase.from("profiles").select(PROFILE_COLS).in("id", otherIds),

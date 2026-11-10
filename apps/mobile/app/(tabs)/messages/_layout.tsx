@@ -1,7 +1,8 @@
 import { Stack } from "expo-router";
-import { C } from "@/lib/theme";
+import { useC } from "@/lib/theme";
 
 export default function MessagesLayout() {
+  const C = useC();
   return (
     <Stack
       screenOptions={{

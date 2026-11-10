@@ -11,15 +11,8 @@ import {
 import { useRouter } from "expo-router";
 import { getCategory, timeAgo, type CheckIn, type Post } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
-import { fetchActiveCheckIns, fetchFeed, toggleLike } from "@/lib/data";
+import { avatarUri, fetchActiveCheckIns, fetchFeed, toggleLike } from "@/lib/data";
 import { useC } from "@/lib/theme";
-
-function avatarUri(p?: { avatar_url?: string | null; username?: string } | null) {
-  return (
-    p?.avatar_url ||
-    `https://api.dicebear.com/9.x/avataaars/svg?seed=${encodeURIComponent(p?.username || "anon")}`
-  );
-}
 
 export default function FeedTab() {
   const C = useC();

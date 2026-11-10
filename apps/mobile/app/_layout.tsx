@@ -26,7 +26,7 @@ export default function RootLayout() {
   return (
     <ErrorBoundary>
       <SafeAreaProvider>
-        <StatusBar style="light" />
+        <StatusBar style="auto" />
         <AuthProvider>
           <Gate />
         </AuthProvider>

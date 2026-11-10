@@ -93,7 +93,7 @@ export default function Thread() {
       ]);
       if (!alive) return;
       setOther((prof as Profile) ?? null);
-      navigation.setOptions({ title: (prof as Profile)?.display_name || (prof as Profile)?.username || "" });
+      navigation.setOptions({ title: conv.title || (prof as Profile)?.display_name || (prof as Profile)?.username || "" });
       setMessages(msgs);
       setEphemeral((conv.ephemeral_mode as "off" | "read" | "24h") ?? "off");
       setPending(conv.status === "pending");
