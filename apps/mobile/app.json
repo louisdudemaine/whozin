@@ -15,7 +15,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "ca.whozin.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "Who's In utilise ta position pour te montrer ce qui se passe autour de toi.",
+        "NSLocationWhenInUseUsageDescription": "Whozin utilise ta position pour te montrer ce qui se passe autour de toi.",
         "ITSAppUsesNonExemptEncryption": false
       }
     },
@@ -33,7 +33,7 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "Who's In utilise ta position pour te montrer ce qui se passe autour de toi."
+          "locationWhenInUsePermission": "Whozin utilise ta position pour te montrer ce qui se passe autour de toi."
         }
       ]
     ],

@@ -196,7 +196,11 @@ export default function Thread() {
         data={messages}
         keyExtractor={(m) => m.id}
         contentContainerStyle={{ padding: 12, gap: 6 }}
-        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: true })}
+        // Rester calé sur le dernier message : quand le contenu change (ouverture, nouveau
+        // message) ET quand la liste rétrécit (clavier). Sans animation : à l'ouverture,
+        // un défilement animé lancé avant la mise en page ne partait pas (fil ouvert en haut).
+        onContentSizeChange={() => listRef.current?.scrollToEnd({ animated: false })}
+        onLayout={() => listRef.current?.scrollToEnd({ animated: false })}
         renderItem={({ item }) => {
           const mine = item.sender_id === meId;
           if (item.kind === "screenshot") {
