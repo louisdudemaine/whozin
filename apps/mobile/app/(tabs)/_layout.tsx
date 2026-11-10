@@ -1,4 +1,4 @@
-import { Tabs } from "expo-router";
+import { Tabs, useSegments } from "expo-router";
 import { Text } from "react-native";
 import { useC } from "@/lib/theme";
 
@@ -8,13 +8,16 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 
 export default function TabsLayout() {
   const C = useC();
+  // Dans un fil de discussion le dock disparaît (comme sur le web) : flottant, il
+  // recouvrait le champ de saisie.
+  const inThread = useSegments().at(-1) === "[id]";
   return (
     <Tabs
       screenOptions={{
         headerStyle: { backgroundColor: C.bg },
         headerTitleStyle: { color: C.text, fontWeight: "900" },
         headerShadowVisible: false,
-        tabBarStyle: {
+        tabBarStyle: inThread ? { display: "none" } : {
           position: "absolute",
           bottom: 18,
           marginHorizontal: 16,

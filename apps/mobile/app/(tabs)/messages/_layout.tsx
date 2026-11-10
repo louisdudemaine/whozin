@@ -1,6 +1,9 @@
 import { Stack } from "expo-router";
 import { useC } from "@/lib/theme";
 
+// Même garantie pour un lien profond vers un fil (whosin://messages/<id>) : la liste dessous.
+export const unstable_settings = { anchor: "index" };
+
 export default function MessagesLayout() {
   const C = useC();
   return (

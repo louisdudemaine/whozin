@@ -12,7 +12,7 @@ import { useRouter } from "expo-router";
 import { getCategory, timeAgo, type CheckIn, type Post } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { avatarUri, fetchActiveCheckIns, fetchFeed, toggleLike } from "@/lib/data";
-import { useC } from "@/lib/theme";
+import { DOCK_SPACE, useC } from "@/lib/theme";
 
 export default function FeedTab() {
   const C = useC();
@@ -41,6 +41,7 @@ export default function FeedTab() {
   return (
     <FlatList
       style={{ backgroundColor: C.bg }}
+      contentContainerStyle={{ paddingBottom: DOCK_SPACE }}
       data={posts}
       keyExtractor={(p) => p.id}
       refreshControl={<RefreshControl refreshing={false} onRefresh={load} tintColor={C.brand} />}

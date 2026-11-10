@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  KeyboardAvoidingView,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   Text,
@@ -21,7 +23,7 @@ import {
 } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { checkIn, fetchCheckIns, fetchNearby, getOrCreateConversation } from "@/lib/data";
-import { useC } from "@/lib/theme";
+import { DOCK_SPACE, useC } from "@/lib/theme";
 
 export default function MapTab() {
   const C = useC();
@@ -76,6 +78,7 @@ export default function MapTab() {
         <FlatList
           data={places}
           keyExtractor={(p) => p.id}
+          contentContainerStyle={{ paddingBottom: DOCK_SPACE }}
           refreshControl={
             <RefreshControl
               refreshing={false}
@@ -168,7 +171,10 @@ function PlaceModal({
     try {
       const cid = await getOrCreateConversation(otherId);
       onClose();
-      router.push(`/messages/${cid}`);
+      // withAnchor : la liste des conversations est posée SOUS le fil. Sans elle, si
+      // l'onglet Messages n'a jamais été ouvert, le fil est seul dans sa pile : pas de
+      // bouton retour, et le dock est masqué dans un fil → aucune sortie.
+      router.push(`/messages/${cid}`, { withAnchor: true });
     } catch {
       /* ignore */
     }
@@ -200,6 +206,8 @@ function PlaceModal({
 
   return (
     <Modal visible animationType="slide" transparent onRequestClose={onClose}>
+      {/* Le clavier pousse la feuille : sinon il recouvre le champ « Quoi de neuf ? ». */}
+      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <Pressable style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.5)" }} onPress={onClose} />
       <View
         style={{
@@ -295,6 +303,7 @@ function PlaceModal({
           </View>
         )}
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

@@ -12,6 +12,8 @@ import {
   View,
 } from "react-native";
 import { useLocalSearchParams, useNavigation, useRouter } from "expo-router";
+import { useHeaderHeight } from "@react-navigation/elements";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenCapture from "expo-screen-capture";
 import type { Message, Profile } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
@@ -30,6 +32,11 @@ import { useC } from "@/lib/theme";
 
 export default function Thread() {
   const C = useC();
+  // Le champ de saisie dégage l'indicateur d'accueil au repos (bas = inset), et le clavier
+  // le pousse de (hauteur du clavier − inset) : le décalage compte l'en-tête, que
+  // KeyboardAvoidingView ne voit pas, moins l'inset déjà ajouté sous le champ.
+  const insets = useSafeAreaInsets();
+  const headerHeight = useHeaderHeight();
   const { id } = useLocalSearchParams<{ id: string }>();
   const convId = String(id);
   const { profile } = useAuth();
@@ -175,6 +182,7 @@ export default function Thread() {
     <KeyboardAvoidingView
       style={{ flex: 1, backgroundColor: C.bg }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={headerHeight - insets.bottom}
     >
       {ephemeral !== "off" && (
         <View style={{ backgroundColor: "rgba(255,46,99,.1)", paddingVertical: 6, alignItems: "center" }}>
@@ -255,7 +263,7 @@ export default function Thread() {
       />
 
       {pending && iAmRecipient ? (
-        <View style={{ borderTopWidth: 1, borderTopColor: C.border, padding: 16 }}>
+        <View style={{ borderTopWidth: 1, borderTopColor: C.border, padding: 16, paddingBottom: 16 + insets.bottom }}>
           <Text style={{ color: C.textDim, textAlign: "center", marginBottom: 12 }}>
             <Text style={{ color: C.text, fontWeight: "700" }}>
               {other?.display_name || other?.username}
@@ -292,6 +300,7 @@ export default function Thread() {
             borderTopWidth: 1,
             borderTopColor: C.border,
             padding: 10,
+            paddingBottom: 10 + insets.bottom,
           }}
         >
           <TextInput

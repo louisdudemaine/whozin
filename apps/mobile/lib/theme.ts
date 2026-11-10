@@ -59,5 +59,12 @@ export function useC(): Palette {
   return useColorScheme() === "light" ? LIGHT : DARK;
 }
 
+/**
+ * Le dock d'onglets flotte PAR-DESSUS les écrans (bottom 18 + hauteur 64, voir
+ * (tabs)/_layout.tsx) : chaque liste d'onglet réserve cet espace en fin de contenu,
+ * sinon son dernier élément reste dessous, intouchable.
+ */
+export const DOCK_SPACE = 100;
+
 /** Statique (contexte hors-composant) — défaut nuit. */
 export const C = DARK;

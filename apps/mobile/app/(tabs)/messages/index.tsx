@@ -16,7 +16,7 @@ import {
   declineConversation,
   fetchConversations,
 } from "@/lib/data";
-import { useC } from "@/lib/theme";
+import { DOCK_SPACE, useC } from "@/lib/theme";
 
 export default function Inbox() {
   const C = useC();
@@ -54,6 +54,7 @@ export default function Inbox() {
   return (
     <FlatList
       style={{ backgroundColor: C.bg }}
+      contentContainerStyle={{ paddingBottom: DOCK_SPACE }}
       data={main}
       keyExtractor={(c) => c.id}
       ListHeaderComponent={
