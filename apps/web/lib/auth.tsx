@@ -45,9 +45,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     });
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
+    const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
       setSession(s);
-      if (s?.user) await loadProfile(s.user.id);
+      // Aucun appel Supabase attendu ICI : le client attend ce rappel pendant son
+      // initialisation, et tout appel Supabase attend l'initialisation → interblocage.
+      // Sur mobile l'app restait figée à chaque relance ; ici la course tombait du bon
+      // côté. On diffère, comme le recommande Supabase.
+      const id = s?.user?.id;
+      if (id) setTimeout(() => loadProfile(id), 0);
       else setProfile(null);
     });
     return () => {
