@@ -23,6 +23,7 @@ import {
   declineConversation,
   fetchConversation,
   fetchMessages,
+  leaveGroup,
   markConversationRead,
   notifyScreenshot,
   PROFILE_COLS,
@@ -49,17 +50,18 @@ export default function Thread() {
   const [pending, setPending] = useState(false);
   const [iAmRecipient, setIAmRecipient] = useState(false);
   const [ephemeral, setEphemeral] = useState<"off" | "read" | "24h">("off");
+  const [isGroup, setIsGroup] = useState<boolean | null>(null); // null : pas encore chargé
   const [now, setNow] = useState(() => Date.now());
   const listRef = useRef<FlatList<Message>>(null);
   const meId = profile?.id;
 
   const chooseEphemeral = useCallback(() => {
     const apply = async (mode: "off" | "read" | "24h") => {
-      setEphemeral(mode);
       try {
         await setEphemeralMode(convId, mode);
+        setEphemeral(mode);
       } catch {
-        /* ignore */
+        /* refusé (ex. demande non acceptée) : on garde l'état réel */
       }
     };
     if (Platform.OS === "ios") {
@@ -106,13 +108,7 @@ export default function Thread() {
       setEphemeral((conv.ephemeral_mode as "off" | "read" | "24h") ?? "off");
       setPending(conv.status === "pending");
       setIAmRecipient(conv.requested_by !== meId);
-      navigation.setOptions({
-        headerRight: () => (
-          <Pressable onPress={chooseEphemeral} hitSlop={10} style={{ paddingHorizontal: 4 }}>
-            <Text style={{ fontSize: 20, opacity: conv.ephemeral_mode && conv.ephemeral_mode !== "off" ? 1 : 0.4 }}>🔥</Text>
-          </Pressable>
-        ),
-      });
+      setIsGroup(conv.is_group);
       markConversationRead(convId).catch(() => {});
     })();
 
@@ -148,7 +144,49 @@ export default function Thread() {
       alive = false;
       supabase.removeChannel(channel);
     };
-  }, [convId, meId, navigation, router, chooseEphemeral]);
+  }, [convId, meId, navigation, router]);
+
+  // En-tête : 🚪 quitter un groupe ; 🔥 masqué sur une demande en attente (comme le web)
+  useEffect(() => {
+    if (isGroup === null) return;
+    navigation.setOptions({
+      headerRight: () => (
+        <View style={{ flexDirection: "row", alignItems: "center", gap: 14 }}>
+          {isGroup && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Quitter le groupe"
+              hitSlop={10}
+              onPress={() =>
+                Alert.alert("Quitter le groupe ?", "Tu ne verras plus ses messages.", [
+                  { text: "Annuler", style: "cancel" },
+                  {
+                    text: "Quitter",
+                    style: "destructive",
+                    onPress: async () => {
+                      try {
+                        await leaveGroup(convId);
+                        router.replace("/messages");
+                      } catch {
+                        Alert.alert("Impossible de quitter le groupe pour le moment.");
+                      }
+                    },
+                  },
+                ])
+              }
+            >
+              <Text style={{ fontSize: 20 }}>🚪</Text>
+            </Pressable>
+          )}
+          {!pending && (
+            <Pressable onPress={chooseEphemeral} hitSlop={10} style={{ paddingHorizontal: 4 }}>
+              <Text style={{ fontSize: 20, opacity: ephemeral !== "off" ? 1 : 0.4 }}>🔥</Text>
+            </Pressable>
+          )}
+        </View>
+      ),
+    });
+  }, [isGroup, pending, ephemeral, chooseEphemeral, convId, navigation, router]);
 
   // 🔥 horloge : compte à rebours + retrait local des messages expirés
   useEffect(() => {

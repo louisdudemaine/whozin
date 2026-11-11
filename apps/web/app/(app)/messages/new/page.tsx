@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import type { Profile } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
-import { createGroupConversation, fetchFollowing } from "@/lib/data";
+import { createGroupConversation, fetchMutuals } from "@/lib/data";
 import { Avatar } from "@/components/Avatar";
 
 export default function NewGroupPage() {
@@ -21,7 +21,8 @@ export default function NewGroupPage() {
 
   useEffect(() => {
     if (!profile) return;
-    fetchFollowing(profile.id)
+    // la base n'ajoute que des amis mutuels
+    fetchMutuals(profile.id)
       .then(setPeople)
       .catch(() => {})
       .finally(() => setLoading(false));
@@ -80,8 +81,8 @@ export default function NewGroupPage() {
       ) : people.length === 0 ? (
         <p className="px-6 py-10 text-center text-sm text-text-dim">
           {locale === "fr"
-            ? "Suis des gens pour pouvoir créer un groupe avec eux."
-            : "Follow people to start a group with them."}
+            ? "Un groupe se crée entre amis mutuels : suivez-vous l'un l'autre d'abord."
+            : "Groups are for mutual friends: follow each other first."}
         </p>
       ) : (
         <ul>

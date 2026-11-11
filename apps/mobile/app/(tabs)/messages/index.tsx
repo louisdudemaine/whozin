@@ -104,7 +104,7 @@ export default function Inbox() {
               {item.status === "pending" && item.iRequested
                 ? "Demande envoyée"
                 : (item.lastMessage?.sender_id === profile?.id ? "Toi : " : "") +
-                  (item.lastMessage?.body || (item.lastMessage?.image_url ? "📷 Photo" : "…"))}
+                  (item.lastMessage?.body || (item.lastMessage?.view_once ? "📸 Snap" : item.lastMessage?.image_url ? "📷 Photo" : "…"))}
             </Text>
           </View>
           {item.unread > 0 && <View style={{ width: 10, height: 10, borderRadius: 5, backgroundColor: C.brand }} />}

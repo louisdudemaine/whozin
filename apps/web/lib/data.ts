@@ -351,16 +351,6 @@ export async function fetchProfileStats(
   };
 }
 
-/** Les profils que `meId` suit (candidats pour un groupe). */
-export async function fetchFollowing(meId: string): Promise<Profile[]> {
-  const supabase = getSupabase();
-  const { data: rows } = await supabase.from("follows").select("following_id").eq("follower_id", meId);
-  const ids = ((rows ?? []) as { following_id: string }[]).map((r) => r.following_id);
-  if (ids.length === 0) return [];
-  const { data: profiles } = await supabase.from("profiles").select(PROFILE_COLS).in("id", ids);
-  return (profiles ?? []) as Profile[];
-}
-
 export async function follow(followerId: string, followingId: string): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase
@@ -844,6 +834,19 @@ export async function joinSquad(code: string): Promise<{ conversation_id: string
   return data as { conversation_id: string; title: string };
 }
 
+export interface SquadPreview {
+  title: string;
+  members: number;
+  inviter: { username: string; display_name: string | null; avatar_url: string | null };
+}
+
+/** Aperçu d'une invitation (rien n'est écrit) ; null si le code est invalide. */
+export async function squadInvitePreview(code: string): Promise<SquadPreview | null> {
+  const { data, error } = await getSupabase().rpc("squad_invite_preview", { invite_code: code });
+  if (error) throw error;
+  return (data ?? null) as SquadPreview | null;
+}
+
 // ----- Stories 24h -----
 
 /** Stories actives groupées par auteur (moi en premier, puis non-vues, puis vues). */
@@ -1075,6 +1078,12 @@ export async function createGroupConversation(title: string, memberIds: string[]
   });
   if (error) throw error;
   return data as string;
+}
+
+/** Quitter un groupe (le dernier parti emporte le groupe). */
+export async function leaveGroup(convId: string): Promise<void> {
+  const { error } = await getSupabase().rpc("leave_group", { conv: convId });
+  if (error) throw error;
 }
 
 export async function acceptConversation(convId: string): Promise<void> {

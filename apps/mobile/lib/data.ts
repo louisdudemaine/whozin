@@ -216,6 +216,12 @@ export async function declineConversation(convId: string) {
   await getSupabase().rpc("decline_conversation", { conv: convId });
 }
 
+/** Quitter un groupe (le dernier parti emporte le groupe). */
+export async function leaveGroup(convId: string) {
+  const { error } = await getSupabase().rpc("leave_group", { conv: convId });
+  if (error) throw error;
+}
+
 export async function unreadMessagesCount(meId: string): Promise<number> {
   const { count } = await getSupabase()
     .from("messages")

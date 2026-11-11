@@ -8,6 +8,7 @@ import { useAuth } from "@/lib/auth";
 import { useCall } from "@/lib/calls";
 import { pushNotify } from "@/lib/push";
 import { useT } from "@/lib/locale";
+import { toast } from "@/lib/toast";
 import { getSupabase } from "@/lib/supabase";
 import {
   acceptConversation,
@@ -15,6 +16,7 @@ import {
   fetchConversation,
   fetchConversationMembers,
   fetchMessages,
+  leaveGroup,
   markConversationRead,
   notifyScreenshot,
   openSnap,
@@ -305,6 +307,23 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
               className="glass pressable flex h-9 w-9 items-center justify-center rounded-full text-base"
             >
               🔗
+            </button>
+            <button
+              type="button"
+              onClick={async () => {
+                const fr = locale === "fr";
+                if (!window.confirm(fr ? "Quitter ce groupe ? Tu ne verras plus ses messages." : "Leave this group? You won't see its messages anymore.")) return;
+                try {
+                  await leaveGroup(id);
+                  router.replace("/messages");
+                } catch {
+                  toast(fr ? "Impossible de quitter le groupe pour le moment." : "Couldn't leave the group right now.", "error");
+                }
+              }}
+              aria-label={locale === "fr" ? "Quitter le groupe" : "Leave group"}
+              className="glass pressable flex h-9 w-9 items-center justify-center rounded-full text-base"
+            >
+              🚪
             </button>
           </div>
         ) : (
@@ -654,8 +673,8 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
             <h2 className="font-display text-lg font-bold">🔥 {locale === "fr" ? "Messages éphémères" : "Disappearing messages"}</h2>
             <p className="mt-0.5 text-xs text-text-dim">
               {locale === "fr"
-                ? "Ce qui se dit la nuit reste à la nuit. Le réglage vaut pour vous deux."
-                : "What's said at night stays at night. The setting applies to both of you."}
+                ? "Ce qui se dit la nuit reste à la nuit. Vaut pour les messages envoyés à partir de maintenant, pour toute la conversation."
+                : "What's said at night stays at night. Applies to messages sent from now on, for everyone in this chat."}
             </p>
             <div className="mt-4 flex flex-col gap-2">
               {([
@@ -696,14 +715,7 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
                 ? "Ce lien les ajoute au groupe et vous connecte."
                 : "This link adds them to the group and connects you."}
             </p>
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=160x160&bgcolor=10101b&color=f4f2f8&data=${encodeURIComponent(inviteLink)}`}
-              alt="QR"
-              className="mx-auto mt-4 rounded-xl border border-border"
-              width={160}
-              height={160}
-            />
+            {/* pas de QR par un service tiers : le lien donne l'accès au groupe */}
             <p className="mt-3 break-all rounded-xl bg-surface-2 px-3 py-2 text-xs text-text-dim">{inviteLink}</p>
             <button
               onClick={async () => {

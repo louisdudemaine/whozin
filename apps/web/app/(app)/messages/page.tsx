@@ -105,7 +105,7 @@ export default function MessagesPage() {
                         ? locale === "fr" ? "Demande envoyée" : "Request sent"
                         : c.lastMessage
                           ? (c.lastMessage.sender_id === profile?.id ? "Toi : " : "") +
-                            (c.lastMessage.body || (c.lastMessage.image_url ? "📷 Photo" : ""))
+                            (c.lastMessage.body || (c.lastMessage.view_once ? "📸 Snap" : c.lastMessage.image_url ? "📷 Photo" : ""))
                           : "…"}
                     </p>
                   </div>
