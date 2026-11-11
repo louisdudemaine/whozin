@@ -77,7 +77,7 @@ export default function MapPage() {
   useEffect(() => {
     const supabase = getSupabase();
     const channel = supabase
-      .channel("map-checkins")
+      .channel("map-checkins", { config: { private: true } })
       .on("postgres_changes", { event: "*", schema: "public", table: "check_ins" }, () => {
         load(center.lat, center.lng);
       })

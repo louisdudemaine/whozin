@@ -36,7 +36,7 @@ export function BeaconStrip() {
     load();
     const supabase = getSupabase();
     const chan = supabase
-      .channel("beacons-live")
+      .channel("beacons-live", { config: { private: true } })
       .on("postgres_changes", { event: "*", schema: "public", table: "beacon_responses" }, load)
       .subscribe();
     return () => {

@@ -28,7 +28,7 @@ export default function MessagesPage() {
     load();
     const supabase = getSupabase();
     const channel = supabase
-      .channel("inbox")
+      .channel("inbox", { config: { private: true } })
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, load)
       .subscribe();
     return () => {

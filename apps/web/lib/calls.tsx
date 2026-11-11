@@ -4,9 +4,9 @@
  * Appels vocaux/vidéo 1-1 — WebRTC pair-à-pair,
  * signalisation par Supabase Realtime (broadcast). Aucun vendeur externe.
  *
- * Canaux :
- *  - `ring:{userId}`  : sonnerie personnelle (chaque user y est abonné en permanence)
- *  - `call:{callId}`  : échange SDP/ICE + fin d'appel entre les 2 pairs
+ * Canaux PRIVÉS (Realtime Authorization, policies sur realtime.messages) :
+ *  - `ring:{userId}` : sonnerie personnelle, lisible par {userId} seul ; émise par la base (rpc ring_call)
+ *  - `call:{conversationId}:{callId}` : SDP/ICE + fin, réservé aux 2 membres de la conversation 1-1 acceptée
  *
  * NB prod : STUN public Google. Pour les NAT stricts (~10 %), ajouter un TURN
  * (ex. coturn / Cloudflare Calls) dans ICE_SERVERS.
@@ -66,7 +66,10 @@ let iceCache: RTCConfiguration | null = null;
 async function getIceServers(): Promise<RTCConfiguration> {
   if (iceCache) return iceCache;
   try {
-    const res = await fetch("/api/turn");
+    const { data } = await getSupabase().auth.getSession();
+    const res = await fetch("/api/turn", {
+      headers: { Authorization: `Bearer ${data.session?.access_token ?? ""}` },
+    });
     if (res.ok) {
       const { iceServers } = await res.json();
       if (Array.isArray(iceServers) && iceServers.length) {
@@ -81,6 +84,9 @@ async function getIceServers(): Promise<RTCConfiguration> {
 }
 
 const RING_TIMEOUT_MS = 30_000;
+
+/** Sujet du canal d'appel ; la base vérifie que je suis membre de cette conversation. */
+const callTopic = (conversationId: string, callId: string) => `call:${conversationId}:${callId}`;
 
 const Ctx = createContext<CallCtx | null>(null);
 
@@ -201,9 +207,10 @@ export function CallProvider({ children }: { children: ReactNode }) {
 
   /** Abonne le canal d'appel (SDP/ICE/fin). */
   const joinCallChannel = useCallback(
-    (callId: string, asInitiator: boolean) => {
+    (topic: string, asInitiator: boolean) => {
       const supabase = getSupabase();
-      const chan = supabase.channel(`call:${callId}`);
+      // littéral neuf : realtime-js réécrit params.config de l'objet reçu
+      const chan = supabase.channel(topic, { config: { private: true } });
       chan
         .on("broadcast", { event: "ready" }, async () => {
           // le destinataire est prêt -> l'appelant crée l'offre
@@ -270,7 +277,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
   /** APPELER quelqu'un. */
   const startCall = useCallback(
     async (other: Profile, kind: CallKind, conversationId: string | null = null) => {
-      if (!profile || stateRef.current !== "idle") return;
+      if (!profile || !conversationId || stateRef.current !== "idle") return;
       const stream = await getMedia(kind);
       if (!stream) return;
 
@@ -279,32 +286,20 @@ export function CallProvider({ children }: { children: ReactNode }) {
       setInfo(i);
       setState("outgoing");
       await createPeer(stream);
-      joinCallChannel(callId, true);
+      joinCallChannel(callTopic(conversationId, callId), true);
 
-      // fait sonner chez l'autre
-      const supabase = getSupabase();
-      const ring = supabase.channel(`ring:${other.id}`);
-      ring.subscribe((status) => {
-        if (status === "SUBSCRIBED") {
-          ring.send({
-            type: "broadcast",
-            event: "ring",
-            payload: {
-              callId,
-              kind,
-              conversationId,
-              from: {
-                id: profile.id,
-                username: profile.username,
-                display_name: profile.display_name,
-                avatar_url: profile.avatar_url,
-              },
-            },
-          });
-          // canal jetable : on le ferme après l'envoi
-          setTimeout(() => supabase.removeChannel(ring), 1500);
-        }
+      // fait sonner chez l'autre : la base vérifie le droit d'appeler et signe l'identité
+      const { error: ringErr } = await getSupabase().rpc("ring_call", {
+        conv: conversationId,
+        call_id: callId,
+        call_kind: kind,
       });
+      if (ringErr) {
+        cleanup();
+        setError("Appel impossible pour le moment.");
+        setTimeout(() => setError(null), 4000);
+        return;
+      }
 
       // notif push (sonne même si l'app est fermée -> ouvre la conversation)
       pushNotify(
@@ -323,13 +318,17 @@ export function CallProvider({ children }: { children: ReactNode }) {
         if (stateRef.current === "outgoing") endCall(true);
       }, RING_TIMEOUT_MS);
     },
-    [createPeer, endCall, getMedia, joinCallChannel, profile]
+    [cleanup, createPeer, endCall, getMedia, joinCallChannel, profile]
   );
 
   /** ACCEPTER l'appel entrant. */
   const accept = useCallback(async () => {
     const i = infoRef.current;
     if (!i || stateRef.current !== "incoming") return;
+    if (!i.conversationId) {
+      cleanup();
+      return;
+    }
     const stream = await getMedia(i.kind);
     if (!stream) {
       cleanup();
@@ -337,7 +336,7 @@ export function CallProvider({ children }: { children: ReactNode }) {
     }
     setState("connecting");
     await createPeer(stream);
-    const chan = joinCallChannel(i.callId, false);
+    const chan = joinCallChannel(callTopic(i.conversationId, i.callId), false);
     // préviens l'appelant qu'on est prêt à recevoir l'offre
     const iv = setInterval(() => {
       if (chan.state === "joined") {
@@ -352,14 +351,16 @@ export function CallProvider({ children }: { children: ReactNode }) {
     const i = infoRef.current;
     if (!i) return;
     // informe l'appelant via le canal d'appel
-    const supabase = getSupabase();
-    const chan = supabase.channel(`call:${i.callId}`);
-    chan.subscribe((s) => {
-      if (s === "SUBSCRIBED") {
-        chan.send({ type: "broadcast", event: "end", payload: { reason: "declined" } });
-        setTimeout(() => supabase.removeChannel(chan), 1000);
-      }
-    });
+    if (i.conversationId) {
+      const supabase = getSupabase();
+      const chan = supabase.channel(callTopic(i.conversationId, i.callId), { config: { private: true } });
+      chan.subscribe((s) => {
+        if (s === "SUBSCRIBED") {
+          chan.send({ type: "broadcast", event: "end", payload: { reason: "declined" } });
+          setTimeout(() => supabase.removeChannel(chan), 1000);
+        }
+      });
+    }
     cleanup();
   }, [cleanup]);
 
@@ -383,10 +384,11 @@ export function CallProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!profile) return;
     const supabase = getSupabase();
-    const ring = supabase.channel(`ring:${profile.id}`);
+    const ring = supabase.channel(`ring:${profile.id}`, { config: { private: true } });
     ring
       .on("broadcast", { event: "ring" }, ({ payload }) => {
-        if (stateRef.current !== "idle") return; // déjà en appel -> ignore
+        // déjà en appel, ou sonnerie incomplète -> ignore
+        if (stateRef.current !== "idle" || !payload?.callId || !payload?.conversationId) return;
         setInfo({
           callId: payload.callId,
           kind: payload.kind,

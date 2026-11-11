@@ -1,14 +1,11 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 /**
- * 🔁 Serveurs ICE pour les appels WebRTC.
- * Ordre de préférence :
- *  1. Metered (TURN dédié) si METERED_TURN_KEY + METERED_TURN_DOMAIN sont posés (prod sérieuse)
- *  2. OpenRelay (TURN public gratuit du projet Metered) — débloque ~10-15 % des appels
- *     derrière NAT symétrique, sans clé
- *  + STUN Google dans tous les cas.
- * La config ne contient aucun secret côté client au-delà des credentials TURN
- * éphémères/publics — c'est le modèle standard WebRTC.
+ * 🔁 Serveurs ICE pour les appels WebRTC : STUN Google + TURN gratuit OpenRelay (aucun secret).
+ * Auth : JWT Supabase (Authorization: Bearer) ; 60 demandes/h par compte (take_quota).
+ * Ne JAMAIS servir ici la liste d'identifiants d'un compte TURN payant : tout compte
+ * (inscription libre) la récupérerait. TURN payant = identifiants par utilisateur, expirants.
  */
 
 export const runtime = "nodejs";
@@ -21,23 +18,21 @@ const OPEN_RELAY = [
   { urls: "turns:openrelay.metered.ca:443?transport=tcp", username: "openrelayproject", credential: "openrelayproject" },
 ];
 
-export async function GET() {
-  const key = process.env.METERED_TURN_KEY;
-  const domain = process.env.METERED_TURN_DOMAIN; // ex: whozin.metered.live
+export async function GET(req: NextRequest) {
+  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!token) return NextResponse.json({ error: "auth requise" }, { status: 401 });
 
-  if (key && domain) {
-    try {
-      const res = await fetch(
-        `https://${domain}/api/v1/turn/credentials?apiKey=${encodeURIComponent(key)}`,
-        { next: { revalidate: 3600 } }
-      );
-      if (res.ok) {
-        const servers = await res.json();
-        return NextResponse.json({ iceServers: [STUN, ...servers], provider: "metered" });
-      }
-    } catch {
-      /* metered en panne -> open relay */
-    }
-  }
+  // client lié au JWT : take_quota compte au nom de l'utilisateur
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false },
+  });
+  const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+  if (userErr || !userData?.user) return NextResponse.json({ error: "jwt invalide" }, { status: 401 });
+
+  // refus ou panne du compteur -> 429 ; le client retombe sur STUN seul
+  const { data: ok, error: qErr } = await supabase.rpc("take_quota", { p_kind: "turn" });
+  if (qErr || ok !== true) return NextResponse.json({ error: "trop de requêtes" }, { status: 429 });
+
   return NextResponse.json({ iceServers: [STUN, ...OPEN_RELAY], provider: "openrelay" });
 }

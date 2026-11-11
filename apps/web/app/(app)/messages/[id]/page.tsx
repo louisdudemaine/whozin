@@ -100,7 +100,7 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     })();
 
     const channel = supabase
-      .channel(`thread-${id}`)
+      .channel(`thread-${id}`, { config: { private: true } })
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${id}` },

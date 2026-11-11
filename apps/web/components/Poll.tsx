@@ -25,7 +25,7 @@ export function PollCard({ pollId }: { pollId: string }) {
     load();
     const supabase = getSupabase();
     const chan = supabase
-      .channel(`poll-${pollId}`)
+      .channel(`poll-${pollId}`, { config: { private: true } })
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "poll_votes", filter: `poll_id=eq.${pollId}` },

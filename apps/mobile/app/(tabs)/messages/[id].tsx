@@ -117,7 +117,7 @@ export default function Thread() {
     })();
 
     const channel = supabase
-      .channel(`thread-${convId}`)
+      .channel(`thread-${convId}`, { config: { private: true } })
       .on(
         "postgres_changes",
         { event: "INSERT", schema: "public", table: "messages", filter: `conversation_id=eq.${convId}` },

@@ -32,12 +32,11 @@ export function ForYou() {
 
   useEffect(() => {
     load();
-    // se rafraîchit quand la ville bouge (check-ins, moves, balises)
+    // se rafraîchit quand la ville bouge (check-ins ; moves n'est pas publiée)
     const supabase = getSupabase();
     const ch = supabase
-      .channel("brain-live")
+      .channel("brain-live", { config: { private: true } })
       .on("postgres_changes", { event: "*", schema: "public", table: "check_ins" }, load)
-      .on("postgres_changes", { event: "*", schema: "public", table: "moves" }, load)
       .subscribe();
     return () => {
       supabase.removeChannel(ch);

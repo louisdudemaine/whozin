@@ -50,7 +50,7 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
 
     const supabase = getSupabase();
     const channel = supabase
-      .channel("notif-badge")
+      .channel("notif-badge", { config: { private: true } })
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "notifications", filter: `user_id=eq.${userId}` },

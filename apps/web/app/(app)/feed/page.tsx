@@ -54,7 +54,7 @@ export default function FeedPage() {
     window.addEventListener("wi:refresh", onRefresh);
     const supabase = getSupabase();
     const channel = supabase
-      .channel("feed-live")
+      .channel("feed-live", { config: { private: true } })
       .on("postgres_changes", { event: "*", schema: "public", table: "posts" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "check_ins" }, load)
       .on("postgres_changes", { event: "*", schema: "public", table: "messages" }, load)
