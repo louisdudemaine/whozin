@@ -9,6 +9,7 @@ import { createClient } from "@supabase/supabase-js";
  */
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const ANON = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
@@ -139,10 +140,12 @@ export async function POST(req: NextRequest) {
   // narration IA optionnelle
   let narration: string | null = null;
   const anthropicKey = process.env.ANTHROPIC_API_KEY;
-  if (anthropicKey) {
+  // plafond par compte et total (public.take_quota) ; refus, panne ou fonction absente = itinéraire sans narration
+  if (anthropicKey && (await supabase.rpc("take_quota", { p_kind: "genius" })).data === true) {
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
+        signal: AbortSignal.timeout(10_000),
         headers: {
           "x-api-key": anthropicKey,
           "anthropic-version": "2023-06-01",

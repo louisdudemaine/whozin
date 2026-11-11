@@ -15,6 +15,18 @@ const DEMO = [
   { email: "lea@whosin.demo", name: "Léa" },
 ];
 
+/** Âge entier d'une date AAAA-MM-JJ saisie à la main (null si ce n'est pas une vraie date). */
+function ageFrom(s: string): number | null {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
+  if (!m) return null;
+  const [y, mo, d] = [Number(m[1]), Number(m[2]) - 1, Number(m[3])];
+  const date = new Date(y, mo, d);
+  if (date.getFullYear() !== y || date.getMonth() !== mo || date.getDate() !== d) return null; // 2010-02-31
+  const now = new Date();
+  const beforeBirthday = now.getMonth() < mo || (now.getMonth() === mo && now.getDate() < d);
+  return now.getFullYear() - y - (beforeBirthday ? 1 : 0);
+}
+
 export function AuthScreen() {
   const C = useC();
   const supabase = getSupabase();
@@ -22,6 +34,7 @@ export function AuthScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
+  const [birthdate, setBirthdate] = useState("");
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -33,10 +46,20 @@ export function AuthScreen() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
+        // contrôle d'accueil seulement : le serveur reste juge (jour civil de Montréal)
+        const age = ageFrom(birthdate.trim());
+        if (age === null || age > 110) {
+          setMsg("Entre ta vraie date de naissance (AAAA-MM-JJ).");
+          return;
+        }
+        if (age < 16) {
+          setMsg("Whozin, c'est 16 ans et plus. Reviens-nous vite! 🌙");
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { username } },
+          options: { data: { username, birthdate: birthdate.trim() } },
         });
         if (error) throw error;
         setMsg("Vérifie tes courriels pour confirmer ton compte.");
@@ -72,6 +95,16 @@ export function AuthScreen() {
 
       {mode === "up" && (
         <Input placeholder="Nom d'utilisateur" value={username} onChangeText={setUsername} />
+      )}
+      {mode === "up" && (
+        <Input
+          placeholder="Date de naissance (AAAA-MM-JJ)"
+          value={birthdate}
+          onChangeText={setBirthdate}
+          keyboardType="numbers-and-punctuation"
+          maxLength={10}
+          accessibilityLabel="Date de naissance, format AAAA-MM-JJ"
+        />
       )}
       <Input placeholder="Courriel" value={email} onChangeText={setEmail} keyboardType="email-address" />
       <Input placeholder="Mot de passe" value={password} onChangeText={setPassword} secureTextEntry />

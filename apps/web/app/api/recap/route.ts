@@ -7,6 +7,7 @@ import { createClient } from "@supabase/supabase-js";
  */
 
 export const runtime = "nodejs";
+export const maxDuration = 30;
 
 interface RecapPayload {
   stops?: { name: string; category: string }[];
@@ -77,11 +78,12 @@ export async function POST(req: NextRequest) {
   // Connexion exigée : sans elle, la route servait de relais gratuit vers le modèle payant.
   const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
   if (!token) return NextResponse.json({ error: "auth requise" }, { status: 401 });
-  const { data: u } = await createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-    { auth: { persistSession: false } }
-  ).auth.getUser(token);
+  // client lié au JWT : take_quota compte au nom de l'utilisateur (sinon appel anon, toujours refusé)
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false },
+  });
+  const { data: u } = await supabase.auth.getUser(token);
   if (!u?.user) return NextResponse.json({ error: "jwt invalide" }, { status: 401 });
 
   let body: RecapPayload;
@@ -93,10 +95,12 @@ export async function POST(req: NextRequest) {
   const fr = body.locale !== "en";
 
   const key = process.env.ANTHROPIC_API_KEY;
-  if (key && (body.stops?.length ?? 0) > 0) {
+  // plafond par compte et total (public.take_quota) ; refus, panne ou fonction absente = plume locale
+  if (key && (body.stops?.length ?? 0) > 0 && (await supabase.rpc("take_quota", { p_kind: "recap" })).data === true) {
     try {
       const res = await fetch("https://api.anthropic.com/v1/messages", {
         method: "POST",
+        signal: AbortSignal.timeout(10_000),
         headers: {
           "x-api-key": key,
           "anthropic-version": "2023-06-01",

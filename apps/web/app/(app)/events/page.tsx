@@ -64,7 +64,12 @@ export default function EventsPage() {
     })();
 
     Promise.all([
-      fetch(`/api/events?lat=${center.lat}&lng=${center.lng}`).then((r) => r.json()),
+      // jeton exigé par la route ; un 401/429 laisse seulement les événements partenaires
+      getSupabase().auth.getSession().then(({ data: s }) =>
+        fetch(`/api/events?lat=${center.lat}&lng=${center.lng}`, {
+          headers: { Authorization: `Bearer ${s.session?.access_token ?? ""}` },
+        }).then((r) => r.json())
+      ),
       getSupabase().rpc("my_category_affinity"),
       fetchPartnerEvents().catch(() => []),
     ])

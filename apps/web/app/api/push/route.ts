@@ -5,6 +5,7 @@ import webpush from "web-push";
 /**
  * Envoi de notifications push.
  * Auth: JWT Supabase de l'expéditeur (Authorization: Bearer).
+ * Cible filtrée par push_targets/can_push (lien consenti) ; titre attribué à l'expéditeur ; 60 push/h par paire.
  * Anti-abus: si conversationId fourni, on vérifie que l'expéditeur y participe.
  * La clé VAPID privée ne vit QUE côté serveur.
  */
@@ -95,9 +96,25 @@ export async function POST(req: NextRequest) {
   const { data: subs } = await supabase.rpc("push_targets", { target });
   type Sub = { endpoint: string; p256dh: string; auth: string };
   const subList = (subs ?? []) as Sub[];
+  if (subList.length === 0) return NextResponse.json({ sent: 0 });
+
+  // plafond par paire expéditeur -> cible, compté seulement quand un lien existe ; refus ou panne = pas d'envoi
+  const { data: ok, error: qErr } = await supabase.rpc("take_quota", { p_kind: `push:${target.toLowerCase()}` });
+  if (qErr || ok !== true) return NextResponse.json({ error: "trop de requêtes" }, { status: 429 });
+
+  // le titre nomme toujours l'expéditeur réel (lu en base) : plus de « Whozin · Sécurité » au nom de l'app
+  const { data: me } = await supabase
+    .from("profiles")
+    .select("username, display_name")
+    .eq("id", sender.id)
+    .maybeSingle();
+  if (!me) return NextResponse.json({ sent: 0 });
+  const name = clipped(me.display_name || me.username, 80);
+  const asked = clipped(body.title, 80);
+  const title = asked === name || asked.startsWith(`${name} · `) ? asked : clipped(`${name} · ${asked}`, 80);
 
   const payload = JSON.stringify({
-    title: clipped(body.title, 80),
+    title,
     body: clipped(body.body, 160),
     url: safeAppPath(body.url),
     tag: clipped(body.tag, 64) || undefined,

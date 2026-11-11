@@ -43,6 +43,7 @@ export function ProfileView({ profile }: { profile: Profile }) {
   const [proCompany, setProCompany] = useState(profile.pro_company ?? "");
   const [proLinkedin, setProLinkedin] = useState(profile.pro_linkedin ?? "");
   const [busy, setBusy] = useState(false);
+  const [saveErr, setSaveErr] = useState<string | null>(null);
   const [openPost, setOpenPost] = useState<Post | null>(null);
   const [blocked, setBlocked] = useState(false);
   const [seenIrl, setSeenIrl] = useState(false);
@@ -84,6 +85,7 @@ export function ProfileView({ profile }: { profile: Profile }) {
 
   async function saveProfile() {
     setBusy(true);
+    setSaveErr(null);
     try {
       await updateProfile(profile.id, {
         display_name: displayName,
@@ -96,6 +98,15 @@ export function ProfileView({ profile }: { profile: Profile }) {
       await updateLocationSharing(profile.id, sharing);
       await refreshProfile();
       setEditing(false);
+    } catch (e) {
+      // contrainte de la migration D : 50 caractères, « whozin » réservé à l'app
+      setSaveErr(
+        String((e as { message?: string })?.message).includes("profiles_display_name_check")
+          ? locale === "fr"
+            ? "Nom refusé (50 caractères max., « Whozin » réservé)."
+            : "Name refused (50 characters max, “Whozin” is reserved)."
+          : t.common.error
+      );
     } finally {
       setBusy(false);
     }
@@ -375,6 +386,7 @@ export function ProfileView({ profile }: { profile: Profile }) {
             <input
               value={displayName}
               onChange={(e) => setDisplayName(e.target.value)}
+              maxLength={50}
               className="mb-3 w-full rounded-xl border border-border bg-surface-2 px-3 py-3 outline-none focus:border-brand"
             />
             <label className="mb-1 block text-xs text-text-dim">{t.profile.bio}</label>
@@ -467,6 +479,11 @@ export function ProfileView({ profile }: { profile: Profile }) {
               )}
             </div>
 
+            {saveErr && (
+              <p role="alert" className="mb-2 text-sm text-brand-2">
+                {saveErr}
+              </p>
+            )}
             <div className="flex gap-2">
               <button
                 onClick={() => setEditing(false)}

@@ -58,8 +58,8 @@ export function BeaconStrip() {
       const mutuals = await fetchMutuals(profile.id);
       for (const m of mutuals.slice(0, 25)) {
         pushNotify(m.id, {
-          title: `🔦 ${me}`,
-          body: fr ? "sort à soir — partant·e?" : "is going out tonight — you in?",
+          title: me, // le serveur titre au nom de l'expéditeur : l'emoji passe dans le texte
+          body: fr ? "🔦 sort à soir — partant·e?" : "🔦 is going out tonight — you in?",
           url: "/feed",
           tag: "beacon",
         });
@@ -76,8 +76,8 @@ export function BeaconStrip() {
     try {
       const r = await respondBeacon(b.id);
       pushNotify(b.user_id, {
-        title: `🔦 ${profile?.display_name || profile?.username}`,
-        body: fr ? "est partant·e!" : "is in!",
+        title: profile?.display_name || profile?.username || "",
+        body: fr ? "🔦 est partant·e!" : "🔦 is in!",
         url: r.conversation_id ? `/messages/${r.conversation_id}` : "/feed",
         tag: "beacon",
       });

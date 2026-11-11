@@ -1,9 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * Proxy Ticketmaster Discovery API — la clé reste côté serveur.
  * Sans TICKETMASTER_API_KEY : repli sur des événements démo (Montréal)
  * pour que la page fonctionne avant le partenariat.
+ * Auth : JWT Supabase (Authorization: Bearer) ; 120 demandes/h par compte (take_quota).
  */
 
 export interface WhozinEvent {
@@ -27,10 +29,12 @@ const TM_SEGMENT: Record<string, WhozinEvent["segment"]> = {
   "Arts & Theatre": "arts",
 };
 
+// Montréal seulement : région bornée, arrondie à 0,2° (≈ 20 km, sous le rayon de 30 km)
+// -> au plus 30 clés de cache de 15 min, quel que soit le nombre de visiteurs ou de comptes.
 function boundedCoord(value: string | null, fallback: number, min: number, max: number): string {
   const parsed = Number(value);
-  if (!Number.isFinite(parsed)) return String(fallback);
-  return String(Math.min(max, Math.max(min, parsed)));
+  const v = Number.isFinite(parsed) ? Math.min(max, Math.max(min, parsed)) : fallback;
+  return (Math.round(v * 5) / 5).toFixed(1);
 }
 
 function demoEvents(): WhozinEvent[] {
@@ -70,9 +74,24 @@ function demoEvents(): WhozinEvent[] {
 }
 
 export async function GET(req: NextRequest) {
+  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!token) return NextResponse.json({ error: "auth requise" }, { status: 401 });
+
+  // client lié au JWT : take_quota compte au nom de l'utilisateur
+  const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!, {
+    global: { headers: { Authorization: `Bearer ${token}` } },
+    auth: { persistSession: false },
+  });
+  const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+  if (userErr || !userData?.user) return NextResponse.json({ error: "jwt invalide" }, { status: 401 });
+
+  // refus ou panne du compteur -> 429 ; la page garde les événements des partenaires
+  const { data: ok, error: qErr } = await supabase.rpc("take_quota", { p_kind: "events" });
+  if (qErr || ok !== true) return NextResponse.json({ error: "trop de requêtes" }, { status: 429 });
+
   const { searchParams } = new URL(req.url);
-  const lat = boundedCoord(searchParams.get("lat"), 45.5019, -90, 90);
-  const lng = boundedCoord(searchParams.get("lng"), -73.5674, -180, 180);
+  const lat = boundedCoord(searchParams.get("lat"), 45.5019, 45.2, 45.9);
+  const lng = boundedCoord(searchParams.get("lng"), -73.5674, -74.3, -73.2);
   const apiKey = process.env.TICKETMASTER_API_KEY;
 
   if (!apiKey) {
