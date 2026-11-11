@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@supabase/supabase-js";
 
 /**
  * 🌅 Narration du recap — IA si ANTHROPIC_API_KEY, sinon plume déterministe.
@@ -72,6 +73,16 @@ export async function POST(req: NextRequest) {
   if (contentLength > MAX_BODY_BYTES) {
     return NextResponse.json({ error: "payload trop volumineux" }, { status: 413 });
   }
+
+  // Connexion exigée : sans elle, la route servait de relais gratuit vers le modèle payant.
+  const token = (req.headers.get("authorization") ?? "").replace(/^Bearer\s+/i, "");
+  if (!token) return NextResponse.json({ error: "auth requise" }, { status: 401 });
+  const { data: u } = await createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false } }
+  ).auth.getUser(token);
+  if (!u?.user) return NextResponse.json({ error: "jwt invalide" }, { status: 401 });
 
   let body: RecapPayload;
   try {

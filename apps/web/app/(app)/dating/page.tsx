@@ -9,7 +9,7 @@ import {
   datingLike,
   fetchDatingCandidates,
   fetchDatingProfile,
-  updateProfile,
+  setBirthdate,
   upsertDatingProfile,
 } from "@/lib/data";
 import { Avatar } from "@/components/Avatar";
@@ -68,17 +68,21 @@ export default function DatingPage() {
   async function saveDob() {
     if (!profile) return;
     const age = ageFrom(dob);
-    if (age === null || age < 13 || age > 110) {
+    if (age === null || age < 16 || age > 110) {
       setDobMsg(fr ? "Entre ta vraie date de naissance." : "Enter your real date of birth.");
       return;
     }
     setBusy(true);
     setDobMsg(null);
     try {
-      await updateProfile(profile.id, { birthdate: dob });
+      await setBirthdate(dob); // une seule fois : elle ne se modifie plus ensuite
       await refreshProfile(); // relance la porte d'âge avec la vraie valeur
     } catch {
-      setDobMsg(fr ? "Oups, réessaie." : "Oops, try again.");
+      setDobMsg(
+        fr
+          ? "Ta date de naissance n'a pas été enregistrée. Vérifie-la et réessaie."
+          : "Your date of birth wasn't saved. Check it and try again."
+      );
     } finally {
       setBusy(false);
     }

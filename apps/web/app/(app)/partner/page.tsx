@@ -2,15 +2,13 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { getCategory, getProEventType, MONTREAL, PRO_EVENT_TYPES, type NearbyPlace } from "@whosin/shared";
+import { getCategory, getProEventType, PRO_EVENT_TYPES } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import {
-  claimPlace,
   createPartnerEvent,
   deletePartnerEvent,
   fetchMyPartnerPlace,
-  fetchNearby,
   fetchPartnerEvents,
   fetchPartnerStats,
   fetchPlaceReservations,
@@ -31,7 +29,7 @@ const SEGMENTS = [
   { key: "other", emoji: "🎉", fr: "Autre", en: "Other" },
 ];
 
-/** 🏪 Portail partenaire — revendique ton lieu, vois ton affluence, crée tes événements. */
+/** 🏪 Portail partenaire — ton affluence, tes événements, tes réservations (gestionnaires vérifiés). */
 export default function PartnerPage() {
   const { profile } = useAuth();
   const { locale } = useT();
@@ -40,7 +38,6 @@ export default function PartnerPage() {
   const [stats, setStats] = useState<PartnerStats | null>(null);
   const [events, setEvents] = useState<PartnerEvent[]>([]);
   const [resas, setResas] = useState<Reservation[]>([]);
-  const [places, setPlaces] = useState<NearbyPlace[]>([]);
   const [busy, setBusy] = useState(false);
 
   // formulaire événement
@@ -59,25 +56,12 @@ export default function PartnerPage() {
       fetchPartnerStats(p.place_id).then(setStats).catch(() => {});
       fetchPartnerEvents(p.place_id).then(setEvents).catch(() => {});
       fetchPlaceReservations(p.place_id).then(setResas).catch(() => {});
-    } else {
-      fetchNearby(MONTREAL.lat, MONTREAL.lng).then(setPlaces).catch(() => {});
     }
   }, [profile]);
 
   useEffect(() => {
     load();
   }, [load]);
-
-  async function doClaim(placeId: string) {
-    if (!profile) return;
-    setBusy(true);
-    try {
-      await claimPlace(profile.id, placeId);
-      await load();
-    } finally {
-      setBusy(false);
-    }
-  }
 
   async function doCreate() {
     if (!profile || !partner || !title.trim() || !when) return;
@@ -125,30 +109,9 @@ export default function PartnerPage() {
           </p>
           <p className="mt-1.5 text-sm text-text-dim">
             {fr
-              ? "Revendique ton bar/resto/salle : vois ton affluence Whozin en direct et publie tes événements gratuitement."
-              : "Claim your bar/restaurant/venue: see your live Whozin crowd and post your events for free."}
+              ? "Le portail des lieux ouvre sur vérification : on confirme d'abord que tu gères bien l'endroit, parce que le portail donne accès à ses réservations. La revendication en un clic est fermée."
+              : "The venue portal opens after verification: we first confirm you actually run the place, because the portal gives access to its reservations. One-tap claiming is closed."}
           </p>
-          <div className="mt-5 flex flex-col gap-2">
-            {places.map((p) => {
-              const c = getCategory(p.category);
-              return (
-                <div key={p.id} className="flex items-center gap-3 rounded-2xl border border-border bg-surface px-3.5 py-3">
-                  <span className="text-2xl">{c.emoji}</span>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-bold">{p.name}</p>
-                    <p className="text-xs" style={{ color: c.color }}>{c.label[locale]}</p>
-                  </div>
-                  <button
-                    onClick={() => doClaim(p.id)}
-                    disabled={busy}
-                    className="brand-gradient pressable shrink-0 rounded-full px-3.5 py-2 text-xs font-bold text-white disabled:opacity-50"
-                  >
-                    {fr ? "Revendiquer" : "Claim"}
-                  </button>
-                </div>
-              );
-            })}
-          </div>
         </div>
       ) : (
         /* ── dashboard ── */

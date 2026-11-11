@@ -18,6 +18,7 @@ import {
   markConversationRead,
   notifyScreenshot,
   openSnap,
+  PROFILE_COLS,
   sendMessage,
   setEphemeralMode,
   uploadMedia,
@@ -90,7 +91,7 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
         );
       } else {
         const otherId = conv.user_a === meId ? conv.user_b : conv.user_a;
-        const { data: prof } = await supabase.from("profiles").select("*").eq("id", otherId).maybeSingle();
+        const { data: prof } = await supabase.from("profiles").select(PROFILE_COLS).eq("id", otherId).maybeSingle();
         if (!alive) return;
         setOther((prof as Profile) ?? null);
       }

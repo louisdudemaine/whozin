@@ -21,7 +21,8 @@ import type {
 } from "@whosin/shared";
 import { getSupabase } from "./supabase";
 
-const PROFILE_COLS = "id,username,display_name,avatar_url,bio,created_at";
+/** Colonnes de profiles lisibles pour un AUTRE compte (liste blanche de la base). */
+export const PROFILE_COLS = "id,username,display_name,avatar_url,bio,created_at";
 
 /** Lieux proches d'un centre (RPC PostGIS). */
 export async function fetchNearby(
@@ -383,7 +384,7 @@ export async function updateProfile(
   patch: Partial<
     Pick<
       Profile,
-      | "display_name" | "bio" | "avatar_url" | "username" | "birthdate"
+      | "display_name" | "bio" | "avatar_url" | "username"
       | "pro_mode" | "pro_title" | "pro_company" | "pro_linkedin" | "pro_industry" | "pro_goals"
       | "interests" | "onboarded"
     >
@@ -391,6 +392,12 @@ export async function updateProfile(
 ): Promise<void> {
   const supabase = getSupabase();
   const { error } = await supabase.from("profiles").update(patch).eq("id", id);
+  if (error) throw error;
+}
+
+/** La date de naissance s'enregistre une seule fois (elle porte la barrière 18+). */
+export async function setBirthdate(date: string): Promise<void> {
+  const { error } = await getSupabase().rpc("set_birthdate", { d: date });
   if (error) throw error;
 }
 

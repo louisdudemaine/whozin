@@ -25,6 +25,7 @@ import {
   fetchMessages,
   markConversationRead,
   notifyScreenshot,
+  PROFILE_COLS,
   sendMessage,
   setEphemeralMode,
 } from "@/lib/data";
@@ -95,7 +96,7 @@ export default function Thread() {
       }
       const otherId = conv.user_a === meId ? conv.user_b : conv.user_a;
       const [{ data: prof }, msgs] = await Promise.all([
-        supabase.from("profiles").select("*").eq("id", otherId).maybeSingle(),
+        supabase.from("profiles").select(PROFILE_COLS).eq("id", otherId).maybeSingle(),
         fetchMessages(convId),
       ]);
       if (!alive) return;

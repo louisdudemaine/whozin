@@ -6,6 +6,7 @@ import type { NightRecap } from "@whosin/shared";
 import { getCategory } from "@whosin/shared";
 import { useT } from "@/lib/locale";
 import { fetchNightRecap } from "@/lib/data";
+import { getSupabase } from "@/lib/supabase";
 import { renderShareCard, shareImage } from "@/lib/sharecard";
 import { Avatar } from "@/components/Avatar";
 
@@ -25,9 +26,13 @@ export default function RecapPage() {
       setLoading(false);
       if (!r) return;
       try {
+        const { data: s } = await getSupabase().auth.getSession();
         const res = await fetch("/api/recap", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${s.session?.access_token}`,
+          },
           body: JSON.stringify({
             stops: r.stops.map((s) => ({ name: s.name, category: s.category })),
             crossedNames: r.crossed.map((c) => c.display_name || c.username),

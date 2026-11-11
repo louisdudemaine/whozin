@@ -9,7 +9,8 @@ import type {
 } from "@whosin/shared";
 import { getSupabase } from "./supabase";
 
-const PROFILE_COLS = "id,username,display_name,avatar_url,bio,created_at";
+/** Colonnes de profiles lisibles pour un AUTRE compte (liste blanche de la base). */
+export const PROFILE_COLS = "id,username,display_name,avatar_url,bio,created_at";
 
 /** <Image> de React Native ne rend pas le SVG : on demande à DiceBear sa variante PNG. */
 export function avatarUri(p?: { avatar_url?: string | null; username?: string } | null) {

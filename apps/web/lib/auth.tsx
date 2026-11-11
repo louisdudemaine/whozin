@@ -27,12 +27,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function loadProfile(userId: string) {
-    const { data } = await supabase
-      .from("profiles")
-      .select("*")
-      .eq("id", userId)
-      .maybeSingle();
+  // Sa propre fiche passe par my_profile() : les colonnes privées (date de naissance, mode de
+  // position, intérêts…) ne sont plus lisibles dans la table, même pour soi.
+  async function loadProfile() {
+    const { data } = await supabase.rpc("my_profile").maybeSingle();
     setProfile((data as Profile) ?? null);
   }
 
@@ -41,7 +39,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     supabase.auth.getSession().then(async ({ data }) => {
       if (!active) return;
       setSession(data.session);
-      if (data.session?.user) await loadProfile(data.session.user.id);
+      if (data.session?.user) await loadProfile();
       setLoading(false);
     });
 
@@ -52,7 +50,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // Sur mobile l'app restait figée à chaque relance ; ici la course tombait du bon
       // côté. On diffère, comme le recommande Supabase.
       const id = s?.user?.id;
-      if (id) setTimeout(() => loadProfile(id), 0);
+      if (id) setTimeout(() => loadProfile(), 0);
       else setProfile(null);
     });
     return () => {
@@ -73,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     profile,
     loading,
     refreshProfile: async () => {
-      if (session?.user) await loadProfile(session.user.id);
+      if (session?.user) await loadProfile();
     },
     signOut: async () => {
       await supabase.auth.signOut();

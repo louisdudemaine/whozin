@@ -25,15 +25,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
 
-  async function loadProfile(id: string) {
-    const { data } = await supabase.from("profiles").select("*").eq("id", id).maybeSingle();
+  // Sa propre fiche passe par my_profile() : les colonnes privées (date de naissance, mode de
+  // position…) ne sont plus lisibles dans la table, même pour soi.
+  async function loadProfile() {
+    const { data } = await supabase.rpc("my_profile").maybeSingle();
     setProfile((data as Profile) ?? null);
   }
 
   useEffect(() => {
     supabase.auth.getSession().then(async ({ data }) => {
       setSession(data.session);
-      if (data.session?.user) await loadProfile(data.session.user.id);
+      if (data.session?.user) await loadProfile();
       setLoading(false);
     });
     const { data: sub } = supabase.auth.onAuthStateChange((_e, s) => {
@@ -42,7 +44,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       // initialisation, et tout appel Supabase attend l'initialisation → interblocage
       // (app figée sur le spinner à chaque relance avec une session). On diffère.
       const id = s?.user?.id;
-      if (id) setTimeout(() => loadProfile(id), 0);
+      if (id) setTimeout(() => loadProfile(), 0);
       else setProfile(null);
     });
     return () => sub.subscription.unsubscribe();
@@ -60,7 +62,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setProfile(null);
         },
         refreshProfile: async () => {
-          if (session?.user) await loadProfile(session.user.id);
+          if (session?.user) await loadProfile();
         },
       }}
     >
