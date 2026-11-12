@@ -8,8 +8,9 @@ import { getSupabase } from "@/lib/supabase";
 interface WidgetData {
   name: string;
   category: string;
-  active: number;
-  today: number;
+  /** null sous le seuil d'anonymat (moins de 3 personnes) */
+  active: number | null;
+  today: number | null;
   next_event: { title: string; starts_at: string } | null;
 }
 
@@ -53,7 +54,7 @@ function WidgetInner() {
   }
 
   const cat = getCategory(data.category);
-  const hot = data.active > 0;
+  const hot = (data.active ?? 0) > 0;
 
   return (
     <div className="flex h-[100dvh] items-center justify-center p-3">
@@ -78,7 +79,7 @@ function WidgetInner() {
 
         <div className="mt-3 flex items-end gap-2">
           <span className="font-display text-5xl font-extrabold leading-none text-gradient">
-            {data.active}
+            {data.active ?? "0–2"}
           </span>
           <span className="pb-1 text-sm text-text-dim">
             {fr
@@ -88,7 +89,7 @@ function WidgetInner() {
         </div>
 
         <p className="mt-2 text-xs text-text-dim">
-          <b className="text-text">{data.today}</b> {fr ? "visites aujourd'hui" : "visits today"}
+          <b className="text-text">{data.today ?? (fr ? "Peu de" : "Few")}</b> {fr ? "visites aujourd'hui" : "visits today"}
           {data.next_event && (
             <>
               {" · "}📅 {data.next_event.title}
