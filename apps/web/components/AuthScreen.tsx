@@ -48,9 +48,10 @@ export function AuthScreen() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
-        // mêmes règles que le serveur, qui remplacerait sans le dire un nom refusé par user_xxxxxxxxxx
+        // mêmes bornes que le serveur (char_length = points de code, d'où [...u]) ; un nom déjà pris reste suffixé
         const u = username.trim();
-        if (u.length < 2 || u.length > 30 || u.toLowerCase().includes("whozin")) {
+        const n = [...u].length;
+        if (n < 2 || n > 30 || u.toLowerCase().includes("whozin")) {
           setMsg(
             fr
               ? "Nom d'utilisateur : 2 à 30 caractères, « Whozin » est réservé."

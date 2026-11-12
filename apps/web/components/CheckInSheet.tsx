@@ -333,6 +333,13 @@ export function CheckInSheet({
                 placeholder={locale === "fr" ? "🎶 Lien Spotify — ce qui joue (optionnel)" : "🎶 Spotify link — what's playing (optional)"}
                 className="rounded-xl border border-border bg-surface-2 px-3 py-2.5 text-sm outline-none focus:border-brand"
               />
+              {profile?.location_sharing === "hidden" && (
+                <p className="text-xs text-text-dim">
+                  {locale === "fr"
+                    ? "👻 Mode Caché : ce check-in restera invisible, même si tu repasses visible."
+                    : "👻 Hidden mode: this check-in stays invisible, even if you become visible again."}
+                </p>
+              )}
               <button
                 onClick={doCheckIn}
                 disabled={busy}

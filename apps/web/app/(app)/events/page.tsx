@@ -96,8 +96,9 @@ export default function EventsPage() {
           eventType: e.event_type,
         }));
         setEvents([...internal, ...(ev.events ?? [])]);
-        if (typeof ev.failed === "number") setEventsFailed(ev.failed);
-        else setSource(ev.source ?? "demo");
+        const failed = typeof ev.failed === "number" ? ev.failed : null;
+        setEventsFailed(failed);
+        setSource(failed === null ? (ev.source ?? "demo") : null);
         // RSVP des événements Whozin
         const ids = partnerEvs.map((e) => e.id);
         const me = profile?.id;

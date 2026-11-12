@@ -49,6 +49,7 @@ export default function Thread() {
   const [other, setOther] = useState<Profile | null>(null);
   const [text, setText] = useState("");
   const [pending, setPending] = useState(false);
+  const [liveLost, setLiveLost] = useState(false);
   const [iAmRecipient, setIAmRecipient] = useState(false);
   const [ephemeral, setEphemeral] = useState<"off" | "read" | "24h">("off");
   const [isGroup, setIsGroup] = useState<boolean | null>(null); // null : pas encore chargé
@@ -160,7 +161,14 @@ export default function Thread() {
       )
       // canal privé : sans la policy de C (ou sans droit), la jonction est refusée ; on le signale
       .subscribe((status, err) => {
-        if (status === "CHANNEL_ERROR") console.warn(`thread-${convId} : canal refusé`, err?.message);
+        if (status === "SUBSCRIBED") {
+          setLiveLost(false);
+          // ce qui est arrivé pendant une coupure n'a pas été diffusé : on relit le fil
+          fetchMessages(convId).then((m) => alive && setMessages(m)).catch(() => {});
+        } else if (status === "CHANNEL_ERROR" || status === "TIMED_OUT") {
+          console.warn(`thread-${convId} : canal refusé`, err?.message);
+          setLiveLost(true);
+        }
       });
     return () => {
       alive = false;
@@ -253,6 +261,11 @@ export default function Thread() {
               : "Éphémère · les nouveaux messages disparaissent après 24 h"}
           </Text>
         </View>
+      )}
+      {liveLost && (
+        <Text accessibilityRole="alert" style={{ color: C.textDim, fontSize: 11, textAlign: "center", paddingVertical: 4 }}>
+          Direct indisponible : les nouveaux messages paraîtront à la réouverture du fil.
+        </Text>
       )}
       <FlatList
         ref={listRef}
