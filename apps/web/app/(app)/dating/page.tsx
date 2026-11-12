@@ -14,6 +14,7 @@ import {
 } from "@/lib/data";
 import { Avatar } from "@/components/Avatar";
 import { hapticImpact } from "@/lib/haptics";
+import { toast } from "@/lib/toast";
 
 type View = "loading" | "dob" | "minor" | "onboarding" | "deck";
 
@@ -112,10 +113,20 @@ export default function DatingPage() {
     if (!current) return;
     const who = current;
     setI((n) => n + 1);
-    const res = await datingLike(who.id);
-    if (res.matched) {
-      hapticImpact();
-      setMatch({ who, convId: res.conversation_id });
+    try {
+      const res = await datingLike(who.id);
+      if (res.matched) {
+        hapticImpact();
+        setMatch({ who, convId: res.conversation_id });
+      }
+    } catch (e) {
+      // « indisponible » : la personne s'est retirée (ou un blocage) depuis le chargement de la pile.
+      toast(
+        (e as { message?: string }).message === "indisponible"
+          ? fr ? "Cette personne n'est plus disponible." : "This person is no longer available."
+          : fr ? "Ton intérêt n'est pas parti. Réessaie plus tard." : "Your like didn't go through. Try again later.",
+        "info"
+      );
     }
   }
   function pass() {

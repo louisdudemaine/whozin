@@ -492,15 +492,22 @@ export async function fetchRsvpInfo(
 ): Promise<Map<string, { count: number; mine: boolean }>> {
   const out = new Map<string, { count: number; mine: boolean }>();
   if (eventIds.length === 0) return out;
-  const { data } = await getSupabase()
-    .from("event_rsvps")
-    .select("event_id,user_id,party_size")
-    .in("event_id", eventIds);
-  for (const r of (data ?? []) as { event_id: string; user_id: string; party_size: number }[]) {
-    const e = out.get(r.event_id) ?? { count: 0, mine: false };
-    e.count += r.party_size;
-    if (r.user_id === meId) e.mine = true;
-    out.set(r.event_id, e);
+  // Chaque événement demandé a son entrée : après un désistement qui ramène le total à 0,
+  // la page remplace l'ancienne valeur au lieu de garder « ✓ J'y vais ».
+  for (const id of eventIds) out.set(id, { count: 0, mine: false });
+  // Total agrégé par event_rsvp_counts() ; la table ne livre que MA réponse (qui y va reste privé).
+  const supabase = getSupabase();
+  const [{ data: counts }, { data: mine }] = await Promise.all([
+    supabase.rpc("event_rsvp_counts", { event_ids: eventIds }),
+    supabase.from("event_rsvps").select("event_id").in("event_id", eventIds).eq("user_id", meId),
+  ]);
+  for (const r of (counts ?? []) as { event_id: string; going: number }[]) {
+    const e = out.get(r.event_id);
+    if (e) e.count = Number(r.going);
+  }
+  for (const r of (mine ?? []) as { event_id: string }[]) {
+    const e = out.get(r.event_id);
+    if (e) e.mine = true;
   }
   return out;
 }
