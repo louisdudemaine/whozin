@@ -12,12 +12,6 @@ import {
 import { getSupabase } from "@/lib/supabase";
 import { useC } from "@/lib/theme";
 
-const DEMO = [
-  { email: "aria@whosin.demo", name: "Aria" },
-  { email: "max@whosin.demo", name: "Max" },
-  { email: "lea@whosin.demo", name: "Léa" },
-];
-
 /** Âge entier d'une date AAAA-MM-JJ saisie à la main (null si ce n'est pas une vraie date). */
 function ageFrom(s: string): number | null {
   const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(s);
@@ -86,13 +80,6 @@ export function AuthScreen() {
     }
   }
 
-  async function demo(em: string) {
-    setBusy(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: em, password: "whosin123" });
-    if (error) setMsg(error.message);
-    setBusy(false);
-  }
-
   return (
     <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
       <ScrollView
@@ -153,30 +140,6 @@ export function AuthScreen() {
             {mode === "in" ? "Pas encore de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
           </Text>
         </Pressable>
-
-        <Text style={{ color: C.textDim, textAlign: "center", marginTop: 40, marginBottom: 10, fontSize: 12 }}>
-          ESSAYER AVEC UN COMPTE DÉMO
-        </Text>
-        <View style={{ flexDirection: "row", gap: 8 }}>
-          {DEMO.map((d) => (
-            <Pressable
-              key={d.email}
-              onPress={() => demo(d.email)}
-              disabled={busy}
-              style={{
-                flex: 1,
-                borderWidth: 1,
-                borderColor: C.border,
-                backgroundColor: C.surface,
-                borderRadius: 16,
-                paddingVertical: 12,
-                alignItems: "center",
-              }}
-            >
-              <Text style={{ color: C.text, fontWeight: "700" }}>{d.name}</Text>
-            </Pressable>
-          ))}
-        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );

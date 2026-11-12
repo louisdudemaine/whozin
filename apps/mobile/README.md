@@ -27,4 +27,4 @@ Les clés Supabase sont dans `app.json` → `expo.extra` (URL + clé publishable
 - **Fil** — posts temps réel (like).
 - **Profil** — stats + déconnexion.
 
-Auth : email/mot de passe + comptes démo (`aria@whosin.demo` / `whosin123`, etc.).
+Auth : email/mot de passe (comptes démo publics retirés le 2026-11-12).

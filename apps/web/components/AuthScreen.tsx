@@ -6,12 +6,6 @@ import { useT } from "@/lib/locale";
 import { ThemeToggle } from "@/lib/theme";
 import { Avatar } from "./Avatar";
 
-const DEMO = [
-  { email: "aria@whosin.demo", name: "Aria" },
-  { email: "max@whosin.demo", name: "Max" },
-  { email: "lea@whosin.demo", name: "Léa" },
-];
-
 const HERO_AVATARS = ["aria_mtl", "maxlevesque", "lea_tremblay", "sam_co"];
 
 /** âge entier à partir d'une date AAAA-MM-JJ (null si invalide) */
@@ -90,17 +84,6 @@ export function AuthScreen() {
     } finally {
       setBusy(false);
     }
-  }
-
-  async function demoLogin(demoEmail: string) {
-    setBusy(true);
-    setMsg(null);
-    const { error } = await supabase.auth.signInWithPassword({
-      email: demoEmail,
-      password: "whosin123",
-    });
-    if (error) setMsg(error.message);
-    setBusy(false);
   }
 
   return (
@@ -199,23 +182,6 @@ export function AuthScreen() {
           >
             {fr ? "J'ai déjà un compte" : "I already have an account"}
           </button>
-          <div className="mt-1">
-            <p className="mb-2 text-center text-[11px] uppercase tracking-[0.18em] text-text-dim">
-              {fr ? "Essayer avec un compte démo" : "Try a demo account"}
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {DEMO.map((d) => (
-                <button
-                  key={d.email}
-                  onClick={() => demoLogin(d.email)}
-                  disabled={busy}
-                  className="glass pressable rounded-2xl py-2.5 text-sm font-bold disabled:opacity-60"
-                >
-                  {d.name}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
       ) : (
         <div className="mt-8 animate-fade">
@@ -275,19 +241,6 @@ export function AuthScreen() {
             >
               {mode === "in" ? t.auth.signUp : t.auth.signIn}
             </button>
-          </div>
-
-          <div className="mt-6 grid grid-cols-3 gap-2">
-            {DEMO.map((d) => (
-              <button
-                key={d.email}
-                onClick={() => demoLogin(d.email)}
-                disabled={busy}
-                className="glass pressable rounded-2xl py-2.5 text-sm font-bold disabled:opacity-60"
-              >
-                {d.name}
-              </button>
-            ))}
           </div>
         </div>
       )}
