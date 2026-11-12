@@ -290,23 +290,6 @@ export async function fetchSuggestedPeople(lim = 12): Promise<import("@whosin/sh
   return rows;
 }
 
-export async function fetchRecommendedPlaces(
-  lat: number,
-  lng: number,
-  lim = 12
-): Promise<import("@whosin/shared").RecommendedPlace[]> {
-  const { data, error } = await getSupabase().rpc("recommended_places", {
-    in_lat: lat,
-    in_lng: lng,
-    lim,
-  });
-  if (error) throw error;
-  return (data ?? []).map((p: Record<string, unknown>) => ({
-    ...(p as unknown as import("@whosin/shared").RecommendedPlace),
-    active_checkins: Number((p as { active_checkins: number }).active_checkins ?? 0),
-  }));
-}
-
 // ----- Profils & social -----
 
 export async function fetchProfileByUsername(username: string): Promise<Profile | null> {

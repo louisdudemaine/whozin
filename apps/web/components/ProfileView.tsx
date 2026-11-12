@@ -425,8 +425,8 @@ export function ProfileView({ profile }: { profile: Profile }) {
             <p className="mb-4 text-xs text-text-dim">
               {sharing === "hidden"
                 ? locale === "fr"
-                  ? "Mode fantôme : tu n'apparais nulle part. Tes check-ins restent privés."
-                  : "Ghost mode: you appear nowhere. Your check-ins stay private."
+                  ? "Mode fantôme : tu n'apparais nulle part. Tes check-ins en cours prennent fin, les suivants restent privés."
+                  : "Ghost mode: you appear nowhere. Your current check-ins end, new ones stay private."
                 : sharing === "precise"
                   ? locale === "fr"
                     ? "Tes amis (mutuels, en Proximité aussi) voient quand tu es à <150 m — jamais ta position exacte."

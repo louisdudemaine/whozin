@@ -249,11 +249,6 @@ export interface SuggestedPerson {
   shared: number;
 }
 
-export interface RecommendedPlace extends NearbyPlace {
-  reason: "taste" | "popular" | "nearby";
-  score: number;
-}
-
 export type NotificationType =
   | "follow"
   | "like"

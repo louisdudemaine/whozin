@@ -29,7 +29,7 @@ export default function PrivacyPage() {
         📜 {fr ? "Confidentialité" : "Privacy policy"}
       </h1>
       <p className="mt-1 text-sm text-text-dim">
-        {fr ? "Dernière mise à jour : 11 juin 2026" : "Last updated: June 11, 2026"}
+        {fr ? "Dernière mise à jour : 11 novembre 2026" : "Last updated: November 11, 2026"}
       </p>
 
       <div className="mt-6 flex flex-col gap-5 text-[15px] leading-relaxed text-text">
@@ -60,17 +60,18 @@ export default function PrivacyPage() {
         <Section title={fr ? "Ta position : 3 modes, ton choix" : "Your location: 3 modes, your choice"}>
           {fr ? (
             <>
-              📍 <b>Précis</b> (Proximité) : paliers seulement (« ici », « proche ») — tes
-              coordonnées exactes ne sont JAMAIS lisibles par d'autres. 📡 <b>Approximatif</b> :
-              position floutée. 👻 <b>Caché</b> : invisible. Tu changes de mode en un tap, en tout
-              temps. Le consentement est demandé par ton navigateur avant tout accès GPS.
+              📍 <b>Approximatif</b> : position floutée. 📡 <b>Proximité</b> : paliers seulement
+              (« ici », « proche ») — tes coordonnées exactes ne sont JAMAIS lisibles par d'autres.
+              👻 <b>Caché</b> : invisible ; passer en Caché met fin à tes check-ins en cours. Tu
+              changes de mode en un tap, en tout temps. Le consentement est demandé par ton
+              navigateur avant tout accès GPS.
             </>
           ) : (
             <>
-              📍 <b>Precise</b> (Proximity): buckets only ("here", "close") — your exact coordinates
-              are NEVER readable by others. 📡 <b>Approximate</b>: blurred position. 👻{" "}
-              <b>Hidden</b>: invisible. Switch anytime, in one tap. Your browser asks consent before
-              any GPS access.
+              📍 <b>Approximate</b>: blurred position. 📡 <b>Proximity</b>: buckets only ("here",
+              "close") — your exact coordinates are NEVER readable by others. 👻 <b>Hidden</b>:
+              invisible; switching to Hidden ends your current check-ins. Switch anytime, in one
+              tap. Your browser asks consent before any GPS access.
             </>
           )}
         </Section>
