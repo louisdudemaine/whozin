@@ -43,7 +43,9 @@ export default function EventsPage() {
   const fr = locale === "fr";
   const [events, setEvents] = useState<MergedEvent[]>([]);
   const [rsvps, setRsvps] = useState<Map<string, { count: number; mine: boolean }>>(new Map());
-  const [source, setSource] = useState<"demo" | "ticketmaster">("demo");
+  const [source, setSource] = useState<"demo" | "ticketmaster" | null>(null);
+  // refus ou panne de /api/events : statut HTTP (0 = réseau), affiché au lieu du bandeau « Aperçu »
+  const [eventsFailed, setEventsFailed] = useState<number | null>(null);
   const [filter, setFilter] = useState<Filter>("all");
   const [tasteSegments, setTasteSegments] = useState<Set<Segment>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -64,12 +66,15 @@ export default function EventsPage() {
     })();
 
     Promise.all([
-      // jeton exigé par la route ; un 401/429 laisse seulement les événements partenaires
-      getSupabase().auth.getSession().then(({ data: s }) =>
-        fetch(`/api/events?lat=${center.lat}&lng=${center.lng}`, {
-          headers: { Authorization: `Bearer ${s.session?.access_token ?? ""}` },
-        }).then((r) => r.json())
-      ),
+      // jeton exigé par la route ; un refus (401/429) ou une panne laisse seulement les événements partenaires, et se dit
+      getSupabase()
+        .auth.getSession()
+        .then(({ data: s }) =>
+          fetch(`/api/events?lat=${center.lat}&lng=${center.lng}`, {
+            headers: { Authorization: `Bearer ${s.session?.access_token ?? ""}` },
+          }).then((r) => (r.ok ? r.json() : { failed: r.status }))
+        )
+        .catch(() => ({ failed: 0 })),
       getSupabase().rpc("my_category_affinity"),
       fetchPartnerEvents().catch(() => []),
     ])
@@ -91,7 +96,8 @@ export default function EventsPage() {
           eventType: e.event_type,
         }));
         setEvents([...internal, ...(ev.events ?? [])]);
-        setSource(ev.source ?? "demo");
+        if (typeof ev.failed === "number") setEventsFailed(ev.failed);
+        else setSource(ev.source ?? "demo");
         // RSVP des événements Whozin
         const ids = partnerEvs.map((e) => e.id);
         const me = profile?.id;
@@ -162,6 +168,18 @@ export default function EventsPage() {
           ))}
         </div>
       </header>
+
+      {eventsFailed !== null && !loading && (
+        <p role="alert" className="border-b border-border bg-surface px-4 py-2 text-xs text-brand-2">
+          {eventsFailed === 429
+            ? fr
+              ? "Trop de recherches d'événements cette heure-ci, réessaie plus tard."
+              : "Too many event searches this hour, try again later."
+            : fr
+              ? "Billetterie indisponible pour le moment, réessaie plus tard."
+              : "Ticketing unavailable right now, try again later."}
+        </p>
+      )}
 
       {source === "demo" && !loading && (
         <p className="border-b border-border bg-surface px-4 py-2 text-xs text-text-dim">

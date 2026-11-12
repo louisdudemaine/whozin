@@ -80,10 +80,13 @@ export default function Thread() {
         /* refusé (ex. demande non acceptée) : on garde l'état réel */
       }
     };
+    // comme le web : le mode ne vaut que pour les messages envoyés après son activation (ephemeral_since)
+    const scope = "Ce qui se dit la nuit reste à la nuit. Vaut pour les messages envoyés à partir de maintenant, pour toute la conversation.";
     if (Platform.OS === "ios") {
       ActionSheetIOS.showActionSheetWithOptions(
         {
           title: "🔥 Messages éphémères",
+          message: scope,
           options: ["Désactivé", "Après lecture", "Après 24 heures", "Annuler"],
           cancelButtonIndex: 3,
         },
@@ -94,7 +97,7 @@ export default function Thread() {
         }
       );
     } else {
-      Alert.alert("🔥 Messages éphémères", "Ce qui se dit la nuit reste à la nuit.", [
+      Alert.alert("🔥 Messages éphémères", scope, [
         { text: "Désactivé", onPress: () => apply("off") },
         { text: "Après lecture", onPress: () => apply("read") },
         { text: "Après 24 h", onPress: () => apply("24h") },
@@ -155,7 +158,10 @@ export default function Thread() {
           setMessages((prev) => prev.filter((x) => x.id !== old.id));
         }
       )
-      .subscribe();
+      // canal privé : sans la policy de C (ou sans droit), la jonction est refusée ; on le signale
+      .subscribe((status, err) => {
+        if (status === "CHANNEL_ERROR") console.warn(`thread-${convId} : canal refusé`, err?.message);
+      });
     return () => {
       alive = false;
       supabase.removeChannel(channel);
@@ -240,9 +246,11 @@ export default function Thread() {
       keyboardVerticalOffset={headerHeight - insets.bottom}
     >
       {ephemeral !== "off" && (
-        <View style={{ backgroundColor: "rgba(255,46,99,.1)", paddingVertical: 6, alignItems: "center" }}>
-          <Text style={{ color: C.brand, fontSize: 11, fontWeight: "800" }}>
-            🔥 {ephemeral === "read" ? "Éphémère · disparaît après lecture" : "Éphémère · disparaît après 24 h"}
+        <View style={{ backgroundColor: "rgba(255,46,99,.1)", paddingVertical: 6, paddingHorizontal: 12, alignItems: "center" }}>
+          <Text style={{ color: C.brand, fontSize: 11, fontWeight: "800", textAlign: "center" }}>
+            🔥 {ephemeral === "read"
+              ? "Éphémère · les nouveaux messages disparaissent après lecture"
+              : "Éphémère · les nouveaux messages disparaissent après 24 h"}
           </Text>
         </View>
       )}

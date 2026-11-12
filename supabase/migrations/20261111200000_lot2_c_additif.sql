@@ -1151,8 +1151,9 @@ begin
     insert into public.conversation_members (conversation_id, user_id) values (cid, me) on conflict do nothing;
   elsif n >= 2 then
     select coalesce(display_name, username) into owner_name from public.profiles where id = b.user_id;
+    -- titre borné à 60 caractères, comme create_group_conversation
     insert into public.conversations (is_group, title, created_by, status)
-      values (true, 'Sortie de ' || owner_name || ' 🔦', b.user_id, 'accepted')
+      values (true, left('Sortie de ' || owner_name, 58) || ' 🔦', b.user_id, 'accepted')
       returning id into cid;
     insert into public.conversation_members (conversation_id, user_id)
       select cid, b.user_id union select cid, user_id from public.beacon_responses where beacon_id = b_id

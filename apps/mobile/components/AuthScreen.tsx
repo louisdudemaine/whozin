@@ -1,7 +1,10 @@
 import { useState } from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
+  ScrollView,
   Text,
   TextInput,
   View,
@@ -46,6 +49,12 @@ export function AuthScreen() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
+        // mêmes règles que le serveur, qui remplacerait sans le dire un nom refusé par user_xxxxxxxxxx
+        const u = username.trim();
+        if (u.length < 2 || u.length > 30 || u.toLowerCase().includes("whozin")) {
+          setMsg("Nom d'utilisateur : 2 à 30 caractères, « Whozin » est réservé.");
+          return;
+        }
         // contrôle d'accueil seulement : le serveur reste juge (jour civil de Montréal)
         const age = ageFrom(birthdate.trim());
         if (age === null || age > 110) {
@@ -59,8 +68,13 @@ export function AuthScreen() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { username, birthdate: birthdate.trim() } },
+          options: { data: { username: u, birthdate: birthdate.trim() } },
         });
+        // seul refus possible du serveur à l'inscription : l'âge (jour civil de Montréal)
+        if (error && /database error saving new user/i.test(error.message)) {
+          setMsg("Inscription refusée : Whozin, c'est 16 ans et plus.");
+          return;
+        }
         if (error) throw error;
         setMsg("Vérifie tes courriels pour confirmer ton compte.");
       }
@@ -79,82 +93,91 @@ export function AuthScreen() {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, padding: 24, justifyContent: "center" }}>
-      <Text style={{ color: C.text, fontSize: 22, fontWeight: "900", marginBottom: 28 }}>
-        Whoz<Text style={{ color: C.brand }}>in</Text>
-      </Text>
-      <Text style={{ color: C.text, fontSize: 38, fontWeight: "900", lineHeight: 42 }}>
-        La ville s'allume.
-      </Text>
-      <Text style={{ color: C.brand, fontSize: 38, fontWeight: "900", lineHeight: 44, marginBottom: 10 }}>
-        T'es où?
-      </Text>
-      <Text style={{ color: C.textDim, marginBottom: 24, fontSize: 15 }}>
-        Vois qui est sorti, en ce moment, autour de toi.
-      </Text>
-
-      {mode === "up" && (
-        <Input placeholder="Nom d'utilisateur" value={username} onChangeText={setUsername} />
-      )}
-      {mode === "up" && (
-        <Input
-          placeholder="Date de naissance (AAAA-MM-JJ)"
-          value={birthdate}
-          onChangeText={setBirthdate}
-          keyboardType="numbers-and-punctuation"
-          maxLength={10}
-          accessibilityLabel="Date de naissance, format AAAA-MM-JJ"
-        />
-      )}
-      <Input placeholder="Courriel" value={email} onChangeText={setEmail} keyboardType="email-address" />
-      <Input placeholder="Mot de passe" value={password} onChangeText={setPassword} secureTextEntry />
-
-      {msg && <Text style={{ color: C.brand2, marginBottom: 8 }}>{msg}</Text>}
-
-      <Pressable
-        onPress={submit}
-        disabled={busy}
-        style={{ backgroundColor: C.brand, borderRadius: 999, paddingVertical: 15, alignItems: "center", shadowColor: C.brand, shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 0 }, elevation: 8 }}
+    <KeyboardAvoidingView style={{ flex: 1, backgroundColor: C.bg }} behavior={Platform.OS === "ios" ? "padding" : undefined}>
+      <ScrollView
+        contentContainerStyle={{ flexGrow: 1, padding: 24, justifyContent: "center" }}
+        keyboardShouldPersistTaps="handled"
       >
-        {busy ? (
-          <ActivityIndicator color="#fff" />
-        ) : (
-          <Text style={{ color: "#fff", fontWeight: "800" }}>
-            {mode === "in" ? "Se connecter" : "Créer un compte"}
+        <Text style={{ color: C.text, fontSize: 22, fontWeight: "900", marginBottom: 28 }}>
+          Whoz<Text style={{ color: C.brand }}>in</Text>
+        </Text>
+        <Text style={{ color: C.text, fontSize: 38, fontWeight: "900", lineHeight: 42 }}>
+          La ville s'allume.
+        </Text>
+        <Text style={{ color: C.brand, fontSize: 38, fontWeight: "900", lineHeight: 44, marginBottom: 10 }}>
+          T'es où?
+        </Text>
+        <Text style={{ color: C.textDim, marginBottom: 24, fontSize: 15 }}>
+          Vois qui est sorti, en ce moment, autour de toi.
+        </Text>
+
+        {mode === "up" && (
+          <Input placeholder="Nom d'utilisateur" value={username} onChangeText={setUsername} />
+        )}
+        {mode === "up" && (
+          <Input
+            placeholder="Date de naissance (AAAA-MM-JJ)"
+            value={birthdate}
+            onChangeText={setBirthdate}
+            keyboardType="numbers-and-punctuation"
+            maxLength={10}
+            accessibilityLabel="Date de naissance, format AAAA-MM-JJ"
+          />
+        )}
+        <Input placeholder="Courriel" value={email} onChangeText={setEmail} keyboardType="email-address" />
+        <Input placeholder="Mot de passe" value={password} onChangeText={setPassword} secureTextEntry />
+
+        {msg && (
+          <Text accessibilityRole="alert" accessibilityLiveRegion="polite" style={{ color: C.brand2, marginBottom: 8 }}>
+            {msg}
           </Text>
         )}
-      </Pressable>
 
-      <Pressable onPress={() => setMode(mode === "in" ? "up" : "in")} style={{ marginTop: 16 }}>
-        <Text style={{ color: C.textDim, textAlign: "center" }}>
-          {mode === "in" ? "Pas encore de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
+        <Pressable
+          onPress={submit}
+          disabled={busy}
+          style={{ backgroundColor: C.brand, borderRadius: 999, paddingVertical: 15, alignItems: "center", shadowColor: C.brand, shadowOpacity: 0.5, shadowRadius: 16, shadowOffset: { width: 0, height: 0 }, elevation: 8 }}
+        >
+          {busy ? (
+            <ActivityIndicator color="#fff" />
+          ) : (
+            <Text style={{ color: "#fff", fontWeight: "800" }}>
+              {mode === "in" ? "Se connecter" : "Créer un compte"}
+            </Text>
+          )}
+        </Pressable>
+
+        <Pressable onPress={() => setMode(mode === "in" ? "up" : "in")} style={{ marginTop: 16 }}>
+          <Text style={{ color: C.textDim, textAlign: "center" }}>
+            {mode === "in" ? "Pas encore de compte ? S'inscrire" : "Déjà un compte ? Se connecter"}
+          </Text>
+        </Pressable>
+
+        <Text style={{ color: C.textDim, textAlign: "center", marginTop: 40, marginBottom: 10, fontSize: 12 }}>
+          ESSAYER AVEC UN COMPTE DÉMO
         </Text>
-      </Pressable>
-
-      <Text style={{ color: C.textDim, textAlign: "center", marginTop: 40, marginBottom: 10, fontSize: 12 }}>
-        ESSAYER AVEC UN COMPTE DÉMO
-      </Text>
-      <View style={{ flexDirection: "row", gap: 8 }}>
-        {DEMO.map((d) => (
-          <Pressable
-            key={d.email}
-            onPress={() => demo(d.email)}
-            disabled={busy}
-            style={{
-              flex: 1,
-              borderWidth: 1,
-              borderColor: C.border,
-              backgroundColor: C.surface,
-              borderRadius: 16,
-              paddingVertical: 12,
-              alignItems: "center",
-            }}
-          >
-            <Text style={{ color: C.text, fontWeight: "700" }}>{d.name}</Text>
-          </Pressable>
-        ))}
-      </View>
-    </View>
+        <View style={{ flexDirection: "row", gap: 8 }}>
+          {DEMO.map((d) => (
+            <Pressable
+              key={d.email}
+              onPress={() => demo(d.email)}
+              disabled={busy}
+              style={{
+                flex: 1,
+                borderWidth: 1,
+                borderColor: C.border,
+                backgroundColor: C.surface,
+                borderRadius: 16,
+                paddingVertical: 12,
+                alignItems: "center",
+              }}
+            >
+              <Text style={{ color: C.text, fontWeight: "700" }}>{d.name}</Text>
+            </Pressable>
+          ))}
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 

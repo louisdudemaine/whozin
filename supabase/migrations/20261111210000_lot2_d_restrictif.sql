@@ -5,10 +5,19 @@
 --   * les photos de messages et les snaps partent dans le bucket privé « chat » (uploadChatPhoto) ;
 --   * le champ « nom affiché » est borné à 50 caractères et l'échec de saveProfile s'affiche.
 -- Le build mobile 9 n'est touché par rien ici (il n'envoie ni photo, ni nom affiché, ni RSVP).
--- Vérifier juste avant (doit rendre 0) : aucune photo de message encore dans le bucket media.
---   select count(*) from public.messages where image_url like 'https://%';
---   select count(*) from private.snaps where image_url like 'https://%';
--- Sinon, traiter ces lignes d'abord : l'ajout de la contrainte échouerait (exprès) et rien ne changerait.
+
+-- Condition préalable, vérifiée ici : plus aucune photo de message ni aucun snap hors du bucket privé « chat »
+-- (adresse https du bucket media). Sinon D s'arrête sur cette exception et rien ne change : traiter ces lignes d'abord.
+do $$
+declare n_msg bigint; n_snap bigint;
+begin
+  select count(*) into n_msg from public.messages where image_url like 'https://%';
+  select count(*) into n_snap from private.snaps where image_url like 'https://%';
+  if n_msg > 0 or n_snap > 0 then
+    raise exception 'D arrêtée : % photo(s) de message et % snap(s) encore hors du bucket chat', n_msg, n_snap;
+  end if;
+end;
+$$;
 
 -- D1. Événements : chacun ne lit plus que SA réponse ; le total passe par event_rsvp_counts().
 alter policy event_rsvps_select on public.event_rsvps

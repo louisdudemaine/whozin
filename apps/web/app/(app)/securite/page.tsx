@@ -222,6 +222,7 @@ function DataCard({ fr }: { fr: boolean }) {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [confirmText, setConfirmText] = useState("");
+  const [eraseError, setEraseError] = useState<string | null>(null);
 
   async function exportData() {
     setBusy(true);
@@ -242,18 +243,39 @@ function DataCard({ fr }: { fr: boolean }) {
 
   async function eraseAccount() {
     setBusy(true);
+    setEraseError(null);
+    let step: "files" | "account" = "files";
     try {
-      // 🧹 Loi 25 : les fichiers publics du compte (bucket media) partent AVANT la fiche (après, plus personne ne peut les lister)
+      // 🧹 Loi 25 : les fichiers publics du compte (bucket media) partent AVANT la fiche (après, plus personne ne peut
+      // les lister ni les effacer). Au moindre échec on s'arrête : le compte reste et l'utilisateur réessaie.
       const uid = (await supabase.auth.getSession()).data.session?.user.id;
-      if (uid) {
-        const { data: files } = await supabase.storage.from("media").list(uid, { limit: 1000 });
-        if (files?.length) await supabase.storage.from("media").remove(files.map((f) => `${uid}/${f.name}`));
+      if (!uid) throw new Error("session absente");
+      const media = supabase.storage.from("media");
+      // page après page : chaque page listée est effacée, puis on relit jusqu'à une page vide
+      for (;;) {
+        const { data: files, error: listErr } = await media.list(uid, { limit: 1000 });
+        if (listErr) throw listErr;
+        const paths = (files ?? []).filter((f) => f.id).map((f) => `${uid}/${f.name}`);
+        if (!paths.length) break;
+        const { data: gone, error: rmErr } = await media.remove(paths);
+        if (rmErr) throw rmErr;
+        if (!gone?.length) throw new Error("aucun fichier effacé"); // refus muet de la RLS : on ne boucle pas
       }
+      step = "account";
       const { error } = await supabase.rpc("erase_my_account");
       if (error) throw error;
       await supabase.auth.signOut();
       router.replace("/");
     } catch {
+      setEraseError(
+        step === "files"
+          ? fr
+            ? "Tes fichiers n'ont pas pu être effacés : ton compte est conservé, réessaie."
+            : "Your files could not be erased: your account is kept, try again."
+          : fr
+            ? "Suppression du compte impossible pour le moment, réessaie."
+            : "Account deletion failed for now, try again."
+      );
       setBusy(false);
     }
   }
@@ -319,6 +341,11 @@ function DataCard({ fr }: { fr: boolean }) {
               {busy ? "…" : fr ? "Tout effacer" : "Erase everything"}
             </button>
           </div>
+          {eraseError && (
+            <p role="alert" className="mt-2.5 text-xs font-semibold text-brand-2">
+              {eraseError}
+            </p>
+          )}
         </div>
       )}
     </div>

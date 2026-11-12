@@ -48,6 +48,16 @@ export function AuthScreen() {
         const { error } = await supabase.auth.signInWithPassword({ email, password });
         if (error) throw error;
       } else {
+        // mêmes règles que le serveur, qui remplacerait sans le dire un nom refusé par user_xxxxxxxxxx
+        const u = username.trim();
+        if (u.length < 2 || u.length > 30 || u.toLowerCase().includes("whozin")) {
+          setMsg(
+            fr
+              ? "Nom d'utilisateur : 2 à 30 caractères, « Whozin » est réservé."
+              : "Username: 2 to 30 characters, “Whozin” is reserved."
+          );
+          return;
+        }
         const age = ageFrom(birthdate);
         if (age === null || age > 110) {
           setMsg(fr ? "Entre ta vraie date de naissance." : "Enter your real date of birth.");
@@ -64,8 +74,13 @@ export function AuthScreen() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { username, display_name: displayName, birthdate } },
+          options: { data: { username: u, display_name: displayName, birthdate } },
         });
+        // seul refus possible du serveur à l'inscription : l'âge (jour civil de Montréal)
+        if (error && /database error saving new user/i.test(error.message)) {
+          setMsg(fr ? "Inscription refusée : Whozin, c'est 16 ans et plus." : "Sign-up refused: Whozin is 16+.");
+          return;
+        }
         if (error) throw error;
         setMsg(t.auth.checkEmail);
       }
@@ -220,7 +235,11 @@ export function AuthScreen() {
             <Field label={t.auth.email} type="email" value={email} onChange={setEmail} placeholder="toi@exemple.com" required />
             <Field label={t.auth.password} type="password" value={password} onChange={setPassword} placeholder="••••••••" required />
 
-            {msg && <p className="glass rounded-xl px-3 py-2 text-sm text-brand-2">{msg}</p>}
+            {msg && (
+              <p role="alert" className="glass rounded-xl px-3 py-2 text-sm text-brand-2">
+                {msg}
+              </p>
+            )}
 
             <button
               type="submit"

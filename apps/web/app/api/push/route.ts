@@ -6,7 +6,7 @@ import webpush from "web-push";
  * Envoi de notifications push.
  * Auth: JWT Supabase de l'expéditeur (Authorization: Bearer).
  * Cible filtrée par push_targets/can_push (lien consenti) ; titre attribué à l'expéditeur ; 60 push/h par paire.
- * Anti-abus: si conversationId fourni, on vérifie que l'expéditeur y participe.
+ * Anti-abus: si conversationId fourni, on vérifie que l'expéditeur ET la cible y participent.
  * La clé VAPID privée ne vit QUE côté serveur.
  */
 
@@ -90,6 +90,14 @@ export async function POST(req: NextRequest) {
       conv: conversationId,
     });
     if (!isMember) return NextResponse.json({ error: "non autorisé" }, { status: 403 });
+    // la cible aussi doit en être membre : un membre parti ne reçoit plus le contenu du groupe
+    const { data: targetMember } = await supabase
+      .from("conversation_members")
+      .select("user_id")
+      .eq("conversation_id", conversationId)
+      .eq("user_id", target)
+      .maybeSingle();
+    if (!targetMember) return NextResponse.json({ sent: 0 });
   }
 
   // anti-énumération : RPC qui renvoie l'abonnement de CETTE cible seulement (si non bloqué)

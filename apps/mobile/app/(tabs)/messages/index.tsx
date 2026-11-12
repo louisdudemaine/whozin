@@ -68,7 +68,7 @@ export default function Inbox() {
                 <Image source={{ uri: avatarUri(c.other) }} style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: C.surface2 }} />
                 <View style={{ flex: 1 }}>
                   <Text style={{ color: C.text, fontWeight: "700" }}>{c.other?.display_name || c.other?.username}</Text>
-                  <Text numberOfLines={1} style={{ color: C.textDim, fontSize: 13 }}>{c.lastMessage?.body ?? "📷"}</Text>
+                  <Text numberOfLines={1} style={{ color: C.textDim, fontSize: 13 }}>{c.lastMessage?.body || (c.lastMessage?.view_once ? "📸 Snap" : c.lastMessage?.image_url ? "📷 Photo" : "…")}</Text>
                 </View>
                 <Pressable onPress={() => accept(c.id)} style={{ backgroundColor: C.brand, borderRadius: 14, paddingHorizontal: 12, paddingVertical: 6 }}>
                   <Text style={{ color: "#fff", fontWeight: "700", fontSize: 12 }}>Accepter</Text>

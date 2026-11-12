@@ -209,31 +209,26 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     }
   }
 
+  // push aux destinataires (hors moi), relus à l'envoi : un membre qui a quitté le groupe n'en reçoit plus — jamais bloquant
+  function notifyOthers(body: string) {
+    const me = profile?.display_name || profile?.username || "Whozin";
+    const title = isGroup ? `${me} · ${groupTitle}` : me;
+    (isGroup ? fetchConversationMembers(id).then((mem) => mem.map((p) => p.id)) : Promise.resolve(other ? [other.id] : []))
+      .then((ids) => {
+        for (const uid of ids) {
+          if (uid !== meId) pushNotify(uid, { title, body, url: `/messages/${id}`, tag: `msg-${id}` }, id);
+        }
+      })
+      .catch(() => {});
+  }
+
   async function send() {
     if (!meId || !text.trim()) return;
     const body = text.trim();
     setText("");
     try {
       await sendMessage(id, meId, body);
-      // push aux destinataires (hors moi) — jamais bloquant
-      const me = profile?.display_name || profile?.username || "Whozin";
-      const recipients = isGroup
-        ? [...membersById.keys()].filter((uid) => uid !== meId)
-        : other
-          ? [other.id]
-          : [];
-      for (const uid of recipients) {
-        pushNotify(
-          uid,
-          {
-            title: isGroup ? `${me} · ${groupTitle}` : me,
-            body,
-            url: `/messages/${id}`,
-            tag: `msg-${id}`,
-          },
-          id
-        );
-      }
+      notifyOthers(body);
     } catch {
       setText(body);
     }
@@ -257,15 +252,7 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     try {
       const path = await uploadChatPhoto(file, id, meId);
       await sendMessage(id, meId, "", path, viewOnce);
-      const me = profile?.display_name || profile?.username || "Whozin";
-      const recipients = isGroup
-        ? [...membersById.keys()].filter((uid) => uid !== meId)
-        : other
-          ? [other.id]
-          : [];
-      for (const uid of recipients) {
-        pushNotify(uid, { title: isGroup ? `${me} · ${groupTitle}` : me, body: viewOnce ? "📸 Photo vue unique" : "📷 Photo", url: `/messages/${id}`, tag: `msg-${id}` }, id);
-      }
+      notifyOthers(viewOnce ? "📸 Photo vue unique" : "📷 Photo");
     } catch {
       toast(
         locale === "fr" ? "Photo non envoyée (images seulement, 10 Mo max.)" : "Photo not sent (images only, 10 MB max)",
