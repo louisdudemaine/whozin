@@ -243,6 +243,12 @@ function DataCard({ fr }: { fr: boolean }) {
   async function eraseAccount() {
     setBusy(true);
     try {
+      // 🧹 Loi 25 : les fichiers publics du compte (bucket media) partent AVANT la fiche (après, plus personne ne peut les lister)
+      const uid = (await supabase.auth.getSession()).data.session?.user.id;
+      if (uid) {
+        const { data: files } = await supabase.storage.from("media").list(uid, { limit: 1000 });
+        if (files?.length) await supabase.storage.from("media").remove(files.map((f) => `${uid}/${f.name}`));
+      }
       const { error } = await supabase.rpc("erase_my_account");
       if (error) throw error;
       await supabase.auth.signOut();

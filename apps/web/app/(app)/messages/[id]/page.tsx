@@ -16,6 +16,7 @@ import {
   fetchConversation,
   fetchConversationMembers,
   fetchMessages,
+  forgetSnap,
   leaveGroup,
   markConversationRead,
   notifyScreenshot,
@@ -23,7 +24,8 @@ import {
   PROFILE_COLS,
   sendMessage,
   setEphemeralMode,
-  uploadMedia,
+  signChatPhotos,
+  uploadChatPhoto,
 } from "@/lib/data";
 import { Avatar } from "@/components/Avatar";
 import { icebreakers } from "@/lib/icebreakers";
@@ -55,7 +57,10 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
   // 📸 snaps
   const [snapDraft, setSnapDraft] = useState<{ file: File; url: string } | null>(null);
   const [snapViewOnce, setSnapViewOnce] = useState(true);
-  const [snapView, setSnapView] = useState<{ url: string; left: number } | null>(null);
+  const [snapView, setSnapView] = useState<{ url: string; path: string; left: number } | null>(null);
+  // 📷 photos du bucket privé « chat » : chemin -> adresse signée
+  const [signed, setSigned] = useState<Record<string, string>>({});
+  const signAsked = useRef(new Set<string>());
   const bottomRef = useRef<HTMLDivElement>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
@@ -136,6 +141,18 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
       supabase.removeChannel(channel);
     };
   }, [id, meId, router]);
+
+  // 📷 chaque photo « chat » est signée une seule fois ; pas de nouvel essai si l'appel échoue (rouvrir le fil re-signe)
+  useEffect(() => {
+    const todo = messages
+      .filter((m) => m.image_url && !m.view_once && !signAsked.current.has(m.image_url))
+      .map((m) => m.image_url as string);
+    if (!todo.length) return;
+    for (const p of todo) signAsked.current.add(p);
+    signChatPhotos(todo)
+      .then((s) => setSigned((prev) => ({ ...prev, ...s })))
+      .catch(() => {});
+  }, [messages]);
 
   useEffect(() => {
     bottomRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -238,8 +255,8 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     URL.revokeObjectURL(objUrl);
     setUploading(true);
     try {
-      const url = await uploadMedia(file, meId);
-      await sendMessage(id, meId, "", url, viewOnce);
+      const path = await uploadChatPhoto(file, id, meId);
+      await sendMessage(id, meId, "", path, viewOnce);
       const me = profile?.display_name || profile?.username || "Whozin";
       const recipients = isGroup
         ? [...membersById.keys()].filter((uid) => uid !== meId)
@@ -249,20 +266,26 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
       for (const uid of recipients) {
         pushNotify(uid, { title: isGroup ? `${me} · ${groupTitle}` : me, body: viewOnce ? "📸 Photo vue unique" : "📷 Photo", url: `/messages/${id}`, tag: `msg-${id}` }, id);
       }
+    } catch {
+      toast(
+        locale === "fr" ? "Photo non envoyée (images seulement, 10 Mo max.)" : "Photo not sent (images only, 10 MB max)",
+        "error"
+      );
     } finally {
       setUploading(false);
     }
   }
 
-  // 📸 ouvrir un snap reçu : récupère l'URL (8 s) puis le retire localement
+  // 📸 ouvrir un snap reçu : chemin (8 s) -> adresse signée courte, puis retrait local
   async function viewSnap(messageId: string) {
     try {
-      const url = await openSnap(messageId);
-      if (!url) return;
-      setSnapView({ url, left: 8 });
+      const path = await openSnap(messageId);
+      if (!path) return;
       setMessages((prev) =>
         prev.map((x) => (x.id === messageId ? { ...x, opened_at: new Date().toISOString() } : x))
       );
+      const url = (await signChatPhotos([path], 30))[path];
+      if (url) setSnapView({ url, path, left: 8 });
     } catch {
       /* ignore */
     }
@@ -448,7 +471,7 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
                     ) : m.image_url ? (
                       <span className="overflow-hidden rounded-2xl">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={m.image_url} alt="" className="w-full object-cover" />
+                        <img src={signed[m.image_url] || undefined} alt="" className="w-full object-cover" />
                         {m.body && (
                           <span className="block px-1 pt-1 text-[15px]" style={{ color: "var(--text)" }}>
                             {m.body}
@@ -655,7 +678,12 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
           onClick={() => setSnapView(null)}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={snapView.url} alt="" className="min-h-0 flex-1 object-contain" />
+          <img
+            src={snapView.url}
+            alt=""
+            className="min-h-0 flex-1 object-contain"
+            onLoad={() => forgetSnap(snapView.path).catch(() => {})}
+          />
           <div className="absolute right-4 top-[max(16px,env(safe-area-inset-top))] flex h-10 w-10 items-center justify-center rounded-full bg-black/60 font-display text-base font-bold text-white">
             {snapView.left}
           </div>

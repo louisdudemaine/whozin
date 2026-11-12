@@ -29,6 +29,7 @@ import {
   PROFILE_COLS,
   sendMessage,
   setEphemeralMode,
+  signChatPhotos,
 } from "@/lib/data";
 import { useC } from "@/lib/theme";
 
@@ -52,8 +53,23 @@ export default function Thread() {
   const [ephemeral, setEphemeral] = useState<"off" | "read" | "24h">("off");
   const [isGroup, setIsGroup] = useState<boolean | null>(null); // null : pas encore chargé
   const [now, setNow] = useState(() => Date.now());
+  // 📷 photos du bucket privé « chat » : chemin -> adresse signée
+  const [signed, setSigned] = useState<Record<string, string>>({});
+  const signAsked = useRef(new Set<string>());
   const listRef = useRef<FlatList<Message>>(null);
   const meId = profile?.id;
+
+  // 📷 chaque photo « chat » est signée une seule fois ; pas de nouvel essai si l'appel échoue (rouvrir le fil re-signe)
+  useEffect(() => {
+    const todo = messages
+      .filter((m) => m.image_url && !m.view_once && !signAsked.current.has(m.image_url))
+      .map((m) => m.image_url as string);
+    if (!todo.length) return;
+    for (const p of todo) signAsked.current.add(p);
+    signChatPhotos(todo)
+      .then((s) => setSigned((prev) => ({ ...prev, ...s })))
+      .catch(() => {});
+  }, [messages]);
 
   const chooseEphemeral = useCallback(() => {
     const apply = async (mode: "off" | "read" | "24h") => {
@@ -233,6 +249,7 @@ export default function Thread() {
       <FlatList
         ref={listRef}
         data={messages}
+        extraData={signed}
         keyExtractor={(m) => m.id}
         contentContainerStyle={{ padding: 12, gap: 6 }}
         // Rester calé sur le dernier message : quand le contenu change (ouverture, nouveau
@@ -279,7 +296,7 @@ export default function Thread() {
                 </View>
               ) : item.image_url ? (
                 <Image
-                  source={{ uri: item.image_url }}
+                  source={{ uri: signed[item.image_url] || undefined }}
                   style={{ width: 200, height: 200, borderRadius: 16, backgroundColor: C.surface2 }}
                 />
               ) : (

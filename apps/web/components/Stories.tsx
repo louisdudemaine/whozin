@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { getCategory, MONTREAL, type NearbyPlace, type UserStories } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
+import { toast } from "@/lib/toast";
 import {
   fetchNearby,
   fetchStories,
@@ -305,6 +306,8 @@ function StoryComposer({ onClose, onPublished }: { onClose: () => void; onPublis
       const url = await uploadMedia(file, profile.id);
       await publishStory(profile.id, url, caption.trim() || null, placeId, isVideo ? "video" : "image");
       onPublished();
+    } catch {
+      toast(fr ? "Story non publiée (photo ou vidéo, 50 Mo max.)" : "Story not posted (photo or video, 50 MB max)", "error");
     } finally {
       setBusy(false);
     }

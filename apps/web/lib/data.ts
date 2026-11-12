@@ -1107,11 +1107,17 @@ export async function fetchMessages(convId: string): Promise<Message[]> {
   return (data as Message[]) ?? [];
 }
 
-/** 📸 ouvre un snap vue unique — renvoie l'URL (visible 8 s puis purgé). */
+/** 📸 ouvre un snap vue unique — renvoie son CHEMIN dans « chat » (lisible 8 s, à signer). */
 export async function openSnap(messageId: string): Promise<string | null> {
   const { data, error } = await getSupabase().rpc("open_snap", { msg: messageId });
   if (error) throw error;
   return (data as { image_url: string | null })?.image_url ?? null;
+}
+
+/** 📸 snap vu : celui qui l'a ouvert efface le fichier (policy chat_delete). Ne tient que pour un client honnête. */
+export async function forgetSnap(path: string): Promise<void> {
+  if (path.startsWith("https://")) return;
+  await getSupabase().storage.from("chat").remove([path]);
 }
 
 /** 🔥 règle le mode éphémère d'une conversation (off | read | 24h). */
@@ -1138,9 +1144,37 @@ export async function sendMessage(
   if (error) throw error;
 }
 
-/** Upload une image dans le bucket public 'media', renvoie l'URL publique. */
-export async function uploadMedia(file: File, userId: string): Promise<string> {
+/**
+ * Réencode une photo en JPEG (2048 px max.) avant l'envoi : retire l'EXIF (position GPS) et borne la taille.
+ * GIF (animation) et vidéos passent tels quels.
+ * ponytail: image que le navigateur ne décode pas (HEIC hors Safari) = envoyée brute, EXIF compris ;
+ * refuser ou convertir côté serveur si ces fichiers deviennent courants.
+ */
+async function cleanImage(file: File): Promise<File> {
+  if (!file.type.startsWith("image/") || file.type === "image/gif") return file;
+  try {
+    const bmp = await createImageBitmap(file, { imageOrientation: "from-image" });
+    const scale = Math.min(1, 2048 / Math.max(bmp.width, bmp.height));
+    const canvas = document.createElement("canvas");
+    canvas.width = Math.round(bmp.width * scale);
+    canvas.height = Math.round(bmp.height * scale);
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return file;
+    ctx.fillStyle = "#fff"; // fond des PNG transparents (le JPEG n'a pas d'alpha)
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    ctx.drawImage(bmp, 0, 0, canvas.width, canvas.height);
+    bmp.close();
+    const blob = await new Promise<Blob | null>((ok) => canvas.toBlob(ok, "image/jpeg", 0.85));
+    return blob ? new File([blob], "photo.jpg", { type: "image/jpeg" }) : file;
+  } catch {
+    return file;
+  }
+}
+
+/** Upload une image (réencodée) ou une vidéo dans le bucket public 'media', renvoie l'URL publique. */
+export async function uploadMedia(raw: File, userId: string): Promise<string> {
   const supabase = getSupabase();
+  const file = await cleanImage(raw);
   const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "");
   const path = `${userId}/${Date.now()}-${Math.round(performance.now())}.${ext}`;
   const { error } = await supabase.storage.from("media").upload(path, file, {
@@ -1150,6 +1184,34 @@ export async function uploadMedia(file: File, userId: string): Promise<string> {
   });
   if (error) throw error;
   return supabase.storage.from("media").getPublicUrl(path).data.publicUrl;
+}
+
+/** 📷 Photo de message (et snap) : bucket PRIVÉ « chat », chemin <conversation>/<moi>/<aléa>.<ext>. Renvoie le CHEMIN. */
+export async function uploadChatPhoto(raw: File, convId: string, userId: string): Promise<string> {
+  const file = await cleanImage(raw);
+  const ext = (file.name.split(".").pop() || "jpg").toLowerCase().replace(/[^a-z0-9]/g, "") || "jpg";
+  const path = `${convId}/${userId}/${crypto.randomUUID()}.${ext}`;
+  const { error } = await getSupabase().storage.from("chat").upload(path, file, {
+    upsert: false,
+    contentType: file.type || undefined,
+  });
+  if (error) throw error;
+  return path;
+}
+
+/** Adresses signées courtes des photos « chat » ; une ancienne adresse https passe telle quelle. */
+export async function signChatPhotos(paths: string[], seconds = 600): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  const todo: string[] = [];
+  for (const p of paths) {
+    if (p.startsWith("https://")) out[p] = p;
+    else todo.push(p);
+  }
+  if (todo.length) {
+    const { data } = await getSupabase().storage.from("chat").createSignedUrls(todo, seconds);
+    for (const d of data ?? []) if (d.path && d.signedUrl) out[d.path] = d.signedUrl;
+  }
+  return out;
 }
 
 export async function markConversationRead(convId: string): Promise<void> {

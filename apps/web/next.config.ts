@@ -52,10 +52,15 @@ const nextConfig: NextConfig = {
       },
     ];
   },
+  // Optimiseur /_next/image : notre seul bucket public, jamais un autre projet Supabase (à nos frais).
   images: {
     remotePatterns: [
       { protocol: "https", hostname: "api.dicebear.com" },
-      { protocol: "https", hostname: "*.supabase.co" },
+      {
+        protocol: "https",
+        hostname: "aovuweoehzflydjtxpdr.supabase.co",
+        pathname: "/storage/v1/object/public/media/**",
+      },
     ],
   },
 };

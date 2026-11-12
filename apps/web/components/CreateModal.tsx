@@ -72,7 +72,8 @@ export function CreateModal({
         visibility,
         selected?.lat ?? null,
         selected?.lng ?? null,
-        photoUrl
+        photoUrl,
+        file?.type.startsWith("video/") ? "video" : "image"
       );
       onCreated?.();
       onClose();

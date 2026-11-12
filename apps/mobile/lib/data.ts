@@ -204,6 +204,21 @@ export async function sendMessage(convId: string, senderId: string, body: string
   if (error) throw error;
 }
 
+/** Adresses signées courtes des photos « chat » (bucket privé) ; une ancienne adresse https passe telle quelle. */
+export async function signChatPhotos(paths: string[], seconds = 600): Promise<Record<string, string>> {
+  const out: Record<string, string> = {};
+  const todo: string[] = [];
+  for (const p of paths) {
+    if (p.startsWith("https://")) out[p] = p;
+    else todo.push(p);
+  }
+  if (todo.length) {
+    const { data } = await getSupabase().storage.from("chat").createSignedUrls(todo, seconds);
+    for (const d of data ?? []) if (d.path && d.signedUrl) out[d.path] = d.signedUrl;
+  }
+  return out;
+}
+
 export async function markConversationRead(convId: string) {
   await getSupabase().rpc("mark_conversation_read", { conv: convId });
 }
