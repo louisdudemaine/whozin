@@ -1,6 +1,7 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   KeyboardAvoidingView,
   Modal,
@@ -14,6 +15,7 @@ import {
 import * as Location from "expo-location";
 import { useRouter } from "expo-router";
 import {
+  estTexteInterdit,
   formatDistance,
   getCategory,
   MONTREAL,
@@ -62,6 +64,7 @@ export default function MapTab() {
   }, [load]);
 
   const totalActive = places.reduce((s, p) => s + p.active_checkins, 0);
+  const livePlaces = places.filter((p) => p.active_checkins > 0).length;
 
   return (
     <View style={{ flex: 1, backgroundColor: C.bg }}>
@@ -69,7 +72,7 @@ export default function MapTab() {
         <Text style={{ color: C.textDim }}>
           <Text style={{ color: C.accent, fontWeight: "800" }}>{totalActive}</Text> actif·ve maintenant
           {"  ·  "}
-          <Text style={{ color: C.text, fontWeight: "800" }}>{places.length}</Text> lieux
+          <Text style={{ color: C.text, fontWeight: "800" }}>{livePlaces}</Text> {livePlaces > 1 ? "lieux actifs" : "lieu actif"}
         </Text>
       </View>
 
@@ -164,8 +167,19 @@ function PlaceModal({
   const [list, setList] = useState<CheckIn[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [failed, setFailed] = useState(false);
+  // compte du lieu relu de places_nearby : moi + ami·es mutuel·les + les autres seulement s'ils sont au moins 3
+  const [active, setActive] = useState(0);
+  // lieu affiché : une réponse arrivée pour un autre lieu (fermé entre-temps) est ignorée
+  const cur = useRef<string | null>(null);
 
   const mine = userId ? list.find((c) => c.user_id === userId) : undefined;
+  // la liste ne nomme que moi et mes ami·es mutuel·les (RLS) ; les autres ne sont qu'un nombre, jamais sous 3
+  const named = new Set(list.map((c) => c.user_id)).size;
+  const extra = Math.max(0, active - named);
+  const others = extra >= 3 ? extra : 0;
+  const here = named + others;
   const router = useRouter();
 
   async function openDm(otherId: string) {
@@ -181,10 +195,29 @@ function PlaceModal({
     }
   }
 
+  async function refresh(p: NearbyPlace) {
+    // seule la LISTE décide de l'erreur ; si le compte échoue, les autres valent 0
+    const [l, near] = await Promise.allSettled([fetchCheckIns(p.id), fetchNearby(p.lat, p.lng, 30)]);
+    if (cur.current !== p.id) return;
+    if (l.status === "fulfilled") {
+      setList(l.value);
+      setFailed(false);
+    } else setFailed(true);
+    setActive(near.status === "fulfilled" ? (near.value.find((x) => x.id === p.id)?.active_checkins ?? 0) : 0);
+  }
+
   useEffect(() => {
-    if (place) fetchCheckIns(place.id).then(setList).catch(() => {});
-    else {
-      setList([]);
+    cur.current = place?.id ?? null;
+    setList([]);
+    setActive(0);
+    setFailed(false);
+    if (place) {
+      setLoading(true);
+      refresh(place).finally(() => {
+        if (cur.current === place.id) setLoading(false);
+      });
+    } else {
+      setLoading(false);
       setMessage("");
     }
   }, [place]);
@@ -195,8 +228,14 @@ function PlaceModal({
     try {
       await checkIn(userId, place.id, message.trim() || null, place.lat, place.lng);
       setMessage("");
-      setList(await fetchCheckIns(place.id));
+      await refresh(place);
       onChanged();
+    } catch (e) {
+      Alert.alert(
+        estTexteInterdit(e)
+          ? "Ce texte contient un mot interdit par nos règles."
+          : "Check-in impossible pour le moment, réessaie."
+      );
     } finally {
       setBusy(false);
     }
@@ -226,20 +265,34 @@ function PlaceModal({
             <Text style={{ color: C.text, fontSize: 18, fontWeight: "800" }}>{place.name}</Text>
             <Text style={{ color: C.textDim }}>{place.address ?? cat.label.fr}</Text>
           </View>
-          <Text style={{ color: C.accent, fontWeight: "800" }}>{place.active_checkins} ici</Text>
+          {here > 0 && <Text style={{ color: C.accent, fontWeight: "800" }}>{here} ici</Text>}
         </View>
 
         <Text style={{ color: C.textDim, fontSize: 12, fontWeight: "700", marginBottom: 8 }}>
-          QUI EST ICI
+          TES AMI·ES ICI
         </Text>
         <FlatList
           style={{ maxHeight: 220 }}
-          data={list}
+          data={failed ? [] : list}
           keyExtractor={(c) => c.id}
           ListEmptyComponent={
-            <Text style={{ color: C.textDim, paddingVertical: 16 }}>
-              Personne pour l&apos;instant — sois le premier !
-            </Text>
+            loading ? (
+              <ActivityIndicator color={C.brand} style={{ paddingVertical: 16 }} />
+            ) : (
+              <Text style={{ color: C.textDim, paddingVertical: 16 }}>
+                {failed
+                  ? "Liste indisponible pour l'instant."
+                  : `Aucun·e ami·e ici pour l'instant.${others > 0 ? ` ${others} autres personnes sur place.` : ""}`}
+              </Text>
+            )
+          }
+          ListFooterComponent={
+            loading || failed ? null : (
+              <Text style={{ color: C.textDim, fontSize: 11, paddingBottom: 8 }}>
+                {list.length > 0 && others > 0 ? `+ ${others} autres personnes sur place. ` : ""}
+                Seul·es tes ami·es mutuel·les sont nommé·es ; les autres ne comptent qu&apos;à partir de 3.
+              </Text>
+            )
           }
           renderItem={({ item }) => (
             <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12, gap: 10 }}>
@@ -279,7 +332,7 @@ function PlaceModal({
                       targetUserId: item.user_id,
                       name: item.author?.username,
                       onBlocked: () => {
-                        setList((l) => l.filter((c) => c.user_id !== item.user_id));
+                        refresh(place);
                         onChanged();
                       },
                     })

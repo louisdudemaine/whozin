@@ -2,10 +2,11 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { timeAgo, type Comment, type Post } from "@whosin/shared";
+import { estTexteInterdit, timeAgo, type Comment, type Post } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { addComment, fetchComments } from "@/lib/data";
+import { toast } from "@/lib/toast";
 import { Avatar } from "./Avatar";
 
 export function CommentsSheet({
@@ -42,12 +43,16 @@ export function CommentsSheet({
     setBusy(true);
     try {
       await addComment(post.id, profile.id, body.trim());
-      setBody("");
-      await load();
-      onAdded();
+    } catch (e) {
+      toast(estTexteInterdit(e) ? t.common.forbiddenWord : t.common.error, "error");
+      return;
     } finally {
       setBusy(false);
     }
+    // publié : un rechargement raté ne doit ni annoncer d'échec ni pousser à republier
+    setBody("");
+    load().catch(() => {});
+    onAdded();
   }
 
   return (

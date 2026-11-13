@@ -4,9 +4,11 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { Profile } from "@whosin/shared";
+import { estTexteInterdit } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { createGroupConversation, fetchMutuals } from "@/lib/data";
+import { toast } from "@/lib/toast";
 import { Avatar } from "@/components/Avatar";
 
 export default function NewGroupPage() {
@@ -42,8 +44,9 @@ export default function NewGroupPage() {
     try {
       const cid = await createGroupConversation(title.trim(), [...selected]);
       router.push(`/messages/${cid}`);
-    } catch {
+    } catch (e) {
       setBusy(false);
+      toast(estTexteInterdit(e) ? t.common.forbiddenWord : t.common.error, "error");
     }
   }
 

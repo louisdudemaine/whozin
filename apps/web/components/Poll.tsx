@@ -1,11 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { getCategory, MONTREAL, type NearbyPlace, type PollData } from "@whosin/shared";
+import { estTexteInterdit, getCategory, MONTREAL, type NearbyPlace, type PollData } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
 import { checkIn, createPoll, fetchNearby, fetchPoll, votePoll } from "@/lib/data";
+// alias : PollCard a déjà un état nommé « toast »
+import { toast as showToast } from "@/lib/toast";
 
 /* ───────── Carte de sondage (dans le fil de groupe) ───────── */
 
@@ -122,7 +124,7 @@ export function PollComposer({
   onCreated: () => void;
 }) {
   const { profile } = useAuth();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const fr = locale === "fr";
   const [places, setPlaces] = useState<NearbyPlace[]>([]);
   const [picked, setPicked] = useState<NearbyPlace[]>([]);
@@ -157,6 +159,8 @@ export function PollComposer({
         picked.map((p) => ({ placeId: p.id, label: p.name }))
       );
       onCreated();
+    } catch (e) {
+      showToast(estTexteInterdit(e) ? t.common.forbiddenWord : t.common.error, "error");
     } finally {
       setBusy(false);
     }

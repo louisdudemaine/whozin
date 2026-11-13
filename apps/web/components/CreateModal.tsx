@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { MONTREAL, getCategory, type NearbyPlace, type Visibility } from "@whosin/shared";
+import { MONTREAL, estTexteInterdit, getCategory, type NearbyPlace, type Visibility } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
-import { createPost, fetchNearby, uploadMedia } from "@/lib/data";
+import { createPost, fetchNearby, removeMedia, uploadMedia } from "@/lib/data";
 
 export function CreateModal({
   open,
@@ -62,8 +62,8 @@ export function CreateModal({
     }
     setBusy(true);
     setErr(null);
+    let photoUrl: string | null = null;
     try {
-      let photoUrl: string | null = null;
       if (file) photoUrl = await uploadMedia(file, profile.id);
       await createPost(
         profile.id,
@@ -75,13 +75,16 @@ export function CreateModal({
         photoUrl,
         file?.type.startsWith("video/") ? "video" : "image"
       );
-      onCreated?.();
-      onClose();
     } catch (e) {
-      setErr(e instanceof Error ? e.message : t.common.error);
+      // refusée après le dépôt : la photo ne reste pas en ligne dans le bucket public
+      if (photoUrl) removeMedia(photoUrl);
+      setErr(estTexteInterdit(e) ? t.common.forbiddenWord : e instanceof Error ? e.message : t.common.error);
+      return;
     } finally {
       setBusy(false);
     }
+    onCreated?.();
+    onClose();
   }
 
   return (
@@ -175,7 +178,11 @@ export function CreateModal({
           ))}
         </div>
 
-        {err && <p className="mt-3 text-sm text-brand-2">{err}</p>}
+        {err && (
+          <p role="alert" className="mt-3 text-sm text-brand-2">
+            {err}
+          </p>
+        )}
 
         <div className="mt-5 flex gap-2">
           <button

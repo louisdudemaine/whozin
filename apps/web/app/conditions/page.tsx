@@ -48,14 +48,14 @@ export default function TermsPage() {
 
         <Section title={fr ? "Signaler et bloquer" : "Report and block"}>
           {fr
-            ? "Dans l'app, le menu ⋯ d'une publication, d'une présence ou d'une conversation permet de signaler ou de bloquer, et un appui long sur un message reçu fait de même ; sur le web, le menu ⋯ d'une publication, d'une story ou d'un profil. Le blocage est immédiat : vous ne voyez plus vos publications ni vos présences, dans les deux sens, et vous ne pouvez plus vous écrire en privé."
-            : "In the app, the ⋯ menu on a post, a check-in or a conversation lets you report or block, and long-pressing a received message does the same; on the web, the ⋯ menu on a post, a story or a profile. Blocking is immediate: you no longer see each other's posts or check-ins, both ways, and you can no longer message each other privately."}
+            ? "Dans l'app, le menu ⋯ d'une publication, d'une présence ou d'une conversation permet de signaler ou de bloquer, et un appui long sur un message reçu fait de même ; sur le web, le menu ⋯ d'une publication, d'une story, d'un profil ou d'un snap ouvert. Le blocage est immédiat : vous ne voyez plus vos publications ni vos présences, dans les deux sens, et vous ne pouvez plus vous écrire en privé."
+            : "In the app, the ⋯ menu on a post, a check-in or a conversation lets you report or block, and long-pressing a received message does the same; on the web, the ⋯ menu on a post, a story, a profile or an open snap. Blocking is immediate: you no longer see each other's posts or check-ins, both ways, and you can no longer message each other privately."}
         </Section>
 
         <Section title={fr ? "Ce que nous faisons d'un signalement" : "What we do with a report"}>
           {fr
-            ? "Nous examinons chaque signalement dans les 24 heures. Le contenu qui enfreint ces règles est retiré, et le compte de son auteur peut être suspendu ou supprimé."
-            : "We review every report within 24 hours. Content that breaks these rules is removed, and its author's account may be suspended or deleted."}
+            ? "Nous examinons chaque signalement dans les 24 heures. Le contenu qui enfreint ces règles est retiré, et le compte de son auteur peut être suspendu ou supprimé. Un contenu signalé est copié pour l'examen ; la copie et sa photo sont gardées jusqu'à 90 jours après la décision, même si le compte de son auteur est supprimé."
+            : "We review every report within 24 hours. Content that breaks these rules is removed, and its author's account may be suspended or deleted. Reported content is copied for review; the copy and its photo are kept for up to 90 days after the decision, even if its author's account is deleted."}
         </Section>
 
         <Section title={fr ? "Ton contenu" : "Your content"}>

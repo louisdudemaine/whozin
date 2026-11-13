@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { blockUser, reportTarget, unblockUser } from "@/lib/data";
@@ -23,12 +23,15 @@ export function SafetyMenu({
   targetUserId,
   blocked = false,
   onBlockChange,
+  onOpenChange,
 }: {
   targetType: "profile" | "post" | "message" | "story";
   targetId: string;
   targetUserId: string;
   blocked?: boolean;
   onBlockChange?: (blocked: boolean) => void;
+  /** menu ouvert ou fermé (ex. la visionneuse de snap suspend son décompte) */
+  onOpenChange?: (open: boolean) => void;
 }) {
   const { profile } = useAuth();
   const { locale } = useT();
@@ -36,6 +39,11 @@ export function SafetyMenu({
   const [open, setOpen] = useState(false);
   const [reporting, setReporting] = useState(false);
   const [done, setDone] = useState<string | null>(null);
+
+  useEffect(() => {
+    onOpenChange?.(open);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   if (!profile || profile.id === targetUserId) return null;
 

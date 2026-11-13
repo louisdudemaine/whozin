@@ -45,6 +45,7 @@ export interface Place {
 /** Lieu enrichi tel que renvoyé par le RPC `places_nearby`. */
 export interface NearbyPlace extends Place {
   distance_m: number;
+  /** personnes distinctes : moi + ami·es mutuel·les + les autres seulement s'ils sont au moins 3 */
   active_checkins: number;
 }
 

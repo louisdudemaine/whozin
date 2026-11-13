@@ -2,10 +2,12 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { estTexteInterdit } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { getSupabase } from "@/lib/supabase";
 import { pushNotify } from "@/lib/push";
+import { toast } from "@/lib/toast";
 import {
   extinguishBeacon,
   fetchActiveBeacons,
@@ -22,7 +24,7 @@ import { Avatar } from "./Avatar";
  */
 export function BeaconStrip() {
   const { profile } = useAuth();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const fr = locale === "fr";
   const router = useRouter();
   const [beacons, setBeacons] = useState<ActiveBeacon[]>([]);
@@ -83,6 +85,8 @@ export function BeaconStrip() {
       });
       if (r.conversation_id) router.push(`/messages/${r.conversation_id}`);
       else load();
+    } catch (e) {
+      toast(estTexteInterdit(e) ? t.common.forbiddenWord : t.common.error, "error");
     } finally {
       setBusy(false);
     }

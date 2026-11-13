@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { getCategory, timeAgo, type CheckIn, type NearbyPlace } from "@whosin/shared";
+import { estTexteInterdit, getCategory, timeAgo, type CheckIn, type NearbyPlace } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import {
@@ -10,6 +10,7 @@ import {
   claimDrop,
   createReservation,
   fetchCheckIns,
+  fetchNearby,
   fetchPlaceDrop,
   fetchPlaceForecast,
   fetchPlaceMemory,
@@ -22,6 +23,7 @@ import {
 import { pushNotify } from "@/lib/push";
 import { renderShareCard, shareImage } from "@/lib/sharecard";
 import { findSpotifyLink, SpotifyEmbed } from "@/lib/spotify";
+import { toast } from "@/lib/toast";
 import { Avatar } from "./Avatar";
 import { MessageButton } from "./MessageButton";
 
@@ -41,6 +43,9 @@ export function CheckInSheet({
   const [spotify, setSpotify] = useState("");
   const [busy, setBusy] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [failed, setFailed] = useState(false);
+  // compte du lieu relu de places_nearby : moi + ami·es mutuel·les + les autres seulement s'ils sont au moins 3
+  const [active, setActive] = useState(0);
   const [memory, setMemory] = useState<PlaceMemory | null>(null);
   const [forecast, setForecast] = useState<PlaceForecast | null>(null);
   const [drop, setDrop] = useState<PlaceDrop | null>(null);
@@ -55,14 +60,22 @@ export function CheckInSheet({
   const bookable = place.category === "restaurant" || place.category === "cafe";
 
   const mine = profile ? list.find((c) => c.user_id === profile.id) : undefined;
+  // la liste ne nomme que moi et mes ami·es mutuel·les (RLS) ; les autres ne sont qu'un nombre, jamais sous 3
+  const named = new Set(list.map((c) => c.user_id)).size;
+  const extra = Math.max(0, active - named);
+  const others = extra >= 3 ? extra : 0;
+  const here = named + others;
 
   async function load() {
     setLoading(true);
-    try {
-      setList(await fetchCheckIns(place.id));
-    } finally {
-      setLoading(false);
-    }
+    // seule la LISTE décide de l'erreur ; si le compte échoue, les autres valent 0
+    const [l, near] = await Promise.allSettled([fetchCheckIns(place.id), fetchNearby(place.lat, place.lng, 30)]);
+    if (l.status === "fulfilled") {
+      setList(l.value);
+      setFailed(false);
+    } else setFailed(true);
+    setActive(near.status === "fulfilled" ? (near.value.find((p) => p.id === place.id)?.active_checkins ?? 0) : 0);
+    setLoading(false);
   }
   useEffect(() => {
     load();
@@ -88,6 +101,8 @@ export function CheckInSheet({
       setSpotify("");
       await load();
       onChanged();
+    } catch (e) {
+      toast(estTexteInterdit(e) ? t.common.forbiddenWord : t.common.error, "error");
     } finally {
       setBusy(false);
     }
@@ -118,6 +133,8 @@ export function CheckInSheet({
         setBookWhen("");
         setBookNote("");
       }, 2200);
+    } catch (e) {
+      toast(estTexteInterdit(e) ? t.common.forbiddenWord : t.common.error, "error");
     } finally {
       setBusy(false);
     }
@@ -155,9 +172,11 @@ export function CheckInSheet({
               {place.address ? ` · ${place.address}` : ""}
             </p>
           </div>
-          <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-bold text-accent">
-            {place.active_checkins} {t.checkin.peopleHere}
-          </span>
+          {here > 0 && (
+            <span className="rounded-full bg-surface-2 px-2.5 py-1 text-xs font-bold text-accent">
+              {here} {here > 1 ? t.checkin.peopleHere : t.checkin.personHere}
+            </span>
+          )}
         </div>
 
         {/* 🎶 ce qui joue ici */}
@@ -254,8 +273,13 @@ export function CheckInSheet({
           </p>
           {loading ? (
             <p className="py-6 text-center text-sm text-text-dim">{t.common.loading}</p>
+          ) : failed ? (
+            <p className="py-6 text-center text-sm text-text-dim">{t.common.error}</p>
           ) : list.length === 0 ? (
-            <p className="py-6 text-center text-sm text-text-dim">{t.map.nobodyYet}</p>
+            <p className="py-6 text-center text-sm text-text-dim">
+              {t.map.nobodyYet}
+              {others > 0 && ` ${others} ${t.map.othersHere}.`}
+            </p>
           ) : (
             <ul className="flex flex-col gap-3 pb-2">
               {list.map((c) => (
@@ -281,6 +305,12 @@ export function CheckInSheet({
               ))}
             </ul>
           )}
+          {!loading && !failed && list.length > 0 && others > 0 && (
+            <p className="pb-2 text-sm text-text-dim">
+              + {others} {t.map.othersHere}.
+            </p>
+          )}
+          {!loading && !failed && <p className="pb-2 text-[11px] text-text-dim">{t.map.othersHint}</p>}
         </div>
 
         {/* action check-in */}

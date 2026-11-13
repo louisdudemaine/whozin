@@ -37,3 +37,8 @@ export function createSupabaseClient(opts: CreateClientOptions): SupabaseClient 
 }
 
 export type { SupabaseClient };
+
+/** SQLSTATE levé par la base quand un texte contient un mot interdit (private.refuser_texte_interdit). */
+export const TEXTE_INTERDIT = "WZ001";
+export const estTexteInterdit = (e: unknown): boolean =>
+  (e as { code?: unknown } | null)?.code === TEXTE_INTERDIT;

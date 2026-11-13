@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
-import { getCategory, getProEventType, PRO_EVENT_TYPES } from "@whosin/shared";
+import { estTexteInterdit, getCategory, getProEventType, PRO_EVENT_TYPES } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import {
@@ -19,6 +19,7 @@ import {
   type Reservation,
 } from "@/lib/data";
 import { pushNotify } from "@/lib/push";
+import { toast } from "@/lib/toast";
 
 const SEGMENTS = [
   { key: "music", emoji: "🎶", fr: "Musique", en: "Music" },
@@ -32,7 +33,7 @@ const SEGMENTS = [
 /** 🏪 Portail partenaire — ton affluence, tes événements, tes réservations (gestionnaires vérifiés). */
 export default function PartnerPage() {
   const { profile } = useAuth();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const fr = locale === "fr";
   const [partner, setPartner] = useState<PartnerPlace | null | undefined>(undefined);
   const [stats, setStats] = useState<PartnerStats | null>(null);
@@ -75,15 +76,19 @@ export default function PartnerPage() {
         price_min: price ? Number(price) : null,
         ticket_url: ticketUrl.trim() || null,
       });
-      setTitle("");
-      setWhen("");
-      setPrice("");
-      setTicketUrl("");
-      setEventType("");
-      await load();
+    } catch (e) {
+      toast(estTexteInterdit(e) ? t.common.forbiddenWord : t.common.error, "error");
+      return;
     } finally {
       setBusy(false);
     }
+    // créé : un rechargement raté ne doit ni annoncer d'échec ni pousser à recréer
+    setTitle("");
+    setWhen("");
+    setPrice("");
+    setTicketUrl("");
+    setEventType("");
+    load().catch(() => {});
   }
 
   const cat = partner?.place ? getCategory(partner.place.category) : null;

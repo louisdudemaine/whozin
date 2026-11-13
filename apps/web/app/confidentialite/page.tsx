@@ -60,7 +60,10 @@ export default function PrivacyPage() {
         <Section title={fr ? "Ta position : 3 modes, ton choix" : "Your location: 3 modes, your choice"}>
           {fr ? (
             <>
-              📍 <b>Approximatif</b> : position floutée. 📡 <b>Proximité</b> : paliers seulement
+              📍 <b>Approximatif</b> : tes ami·es mutuel·les te voient au lieu ; les autres ne voient
+              jamais ton nom, ta présence peut seulement compter dans un nombre de personnes (jamais
+              sous 3). Une story ou une publication publique liée à un lieu reste visible de tous.
+              📡 <b>Proximité</b> : paliers seulement
               (« ici », « proche ») — tes coordonnées exactes ne sont JAMAIS lisibles par d'autres.
               👻 <b>Caché</b> : invisible ; passer en Caché met fin à tes check-ins en cours. Tu
               changes de mode en un tap, en tout temps. Le consentement est demandé par ton
@@ -68,7 +71,9 @@ export default function PrivacyPage() {
             </>
           ) : (
             <>
-              📍 <b>Approximate</b>: blurred position. 📡 <b>Proximity</b>: buckets only ("here",
+              📍 <b>Approximate</b>: mutual friends see you at the venue; others never see your name,
+              you may only count in a head count (never under 3). A story or public post tagged with a
+              venue stays visible to everyone. 📡 <b>Proximity</b>: buckets only ("here",
               "close") — your exact coordinates are NEVER readable by others. 👻 <b>Hidden</b>:
               invisible; switching to Hidden ends your current check-ins. Switch anytime, in one
               tap. Your browser asks consent before any GPS access.
@@ -113,8 +118,8 @@ export default function PrivacyPage() {
 
         <Section title={fr ? "Conservation" : "Retention"}>
           {fr
-            ? "Les check-ins expirent d'eux-mêmes (2 h), les stories après 24 h. Le reste vit tant que ton compte existe. Compte supprimé = données supprimées, immédiatement."
-            : "Check-ins expire on their own (2h), stories after 24h. Everything else lives while your account exists. Account deleted = data deleted, immediately."}
+            ? "Les check-ins expirent d'eux-mêmes (2 h), les stories après 24 h. Le reste vit tant que ton compte existe. Compte supprimé = données supprimées, immédiatement. Un contenu signalé est copié pour l'examen ; la copie et sa photo sont gardées jusqu'à 90 jours après la décision, même si le compte de son auteur est supprimé."
+            : "Check-ins expire on their own (2h), stories after 24h. Everything else lives while your account exists. Account deleted = data deleted, immediately. Reported content is copied for review; the copy and its photo are kept for up to 90 days after the decision, even if its author's account is deleted."}
         </Section>
 
         <Section title={fr ? "Responsable & contact" : "Officer & contact"}>

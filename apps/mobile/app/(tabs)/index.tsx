@@ -71,7 +71,7 @@ function Stories({ stories }: { stories: CheckIn[] }) {
   return (
     <View style={{ borderBottomWidth: 1, borderBottomColor: C.border }}>
       <Text style={{ color: C.brand, fontWeight: "800", fontSize: 12, paddingHorizontal: 12, paddingTop: 10 }}>
-        ● EN DIRECT
+        ● TA GANG EN DIRECT
       </Text>
       <FlatList
         horizontal

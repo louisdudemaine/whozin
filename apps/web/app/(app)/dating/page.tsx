@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { DatingCandidate } from "@whosin/shared";
+import { estTexteInterdit } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import {
@@ -32,7 +33,7 @@ function ageFrom(dateStr: string | null | undefined): number | null {
 
 export default function DatingPage() {
   const { profile, refreshProfile } = useAuth();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const [view, setView] = useState<View>("loading");
   const [vibe, setVibe] = useState("");
   const [dob, setDob] = useState("");
@@ -102,6 +103,8 @@ export default function DatingPage() {
     try {
       await upsertDatingProfile(profile.id, true, vibe.trim());
       await loadDeck();
+    } catch (e) {
+      toast(estTexteInterdit(e) ? t.common.forbiddenWord : t.common.error, "error");
     } finally {
       setBusy(false);
     }

@@ -57,7 +57,7 @@ export function LiveNow({
       <div className="flex items-center gap-2.5 px-4 pt-4 pb-3">
         <span className="live-dot" />
         <span className="font-display text-[13px] font-bold uppercase tracking-[0.14em]">
-          {locale === "fr" ? "Ça bouge maintenant" : "Happening now"}
+          {locale === "fr" ? "Ta gang dehors" : "Your crew out"}
         </span>
       </div>
 

@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { CATEGORY_LIST } from "@whosin/shared";
+import { CATEGORY_LIST, estTexteInterdit } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { updateProfile } from "@/lib/data";
+import { toast } from "@/lib/toast";
 
 /** vibes perso au-delà des catégories de lieux */
 const VIBES: { key: string; fr: string; en: string; emoji: string }[] = [
@@ -43,7 +44,7 @@ const GOALS: { key: string; fr: string; en: string; emoji: string }[] = [
 /** 🧭 Questionnaire d'onboarding — intérêts perso, puis pro si désiré. */
 export function Onboarding({ onDone }: { onDone: () => void }) {
   const { profile, refreshProfile } = useAuth();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const fr = locale === "fr";
   const [step, setStep] = useState<1 | 2 | 3>(1);
   const [interests, setInterests] = useState<string[]>(profile?.interests ?? []);
@@ -74,6 +75,8 @@ export function Onboarding({ onDone }: { onDone: () => void }) {
       });
       await refreshProfile();
       onDone();
+    } catch (e) {
+      toast(estTexteInterdit(e) ? t.common.forbiddenWord : t.common.error, "error");
     } finally {
       setBusy(false);
     }

@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { FriendMove, MyMove } from "@whosin/shared";
+import { estTexteInterdit } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import {
@@ -20,7 +21,7 @@ const EMOJIS = ["🍻", "🍜", "🪩", "☕", "🎶", "🏀", "🎬", "🌙", "
 /** 🌃 Le Move — bulles éphémères « c'est quoi le move ce soir? » en tête du feed. */
 export function MoveStrip() {
   const { profile } = useAuth();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const router = useRouter();
   const fr = locale === "fr";
   const [mine, setMine] = useState<MyMove | null>(null);
@@ -49,6 +50,8 @@ export function MoveStrip() {
       setText("");
       await load();
       toast(fr ? "Ton move est lancé 🌃" : "Your move is live 🌃");
+    } catch (e) {
+      toast(estTexteInterdit(e) ? t.common.forbiddenWord : t.common.error, "error");
     } finally {
       setBusy(false);
     }

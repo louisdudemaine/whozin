@@ -16,6 +16,7 @@ import { useHeaderHeight } from "@react-navigation/elements";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import * as ScreenCapture from "expo-screen-capture";
 import type { Message, Profile } from "@whosin/shared";
+import { estTexteInterdit } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { getSupabase } from "@/lib/supabase";
 import {
@@ -263,8 +264,11 @@ export default function Thread() {
     setText("");
     try {
       await sendMessage(convId, meId, body);
-    } catch {
+    } catch (e) {
       setText(body);
+      Alert.alert(
+        estTexteInterdit(e) ? "Ce texte contient un mot interdit par nos règles." : "Message non envoyé, réessaie."
+      );
     }
   }, [convId, meId, text]);
 

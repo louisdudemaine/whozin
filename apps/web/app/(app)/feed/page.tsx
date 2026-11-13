@@ -65,8 +65,10 @@ export default function FeedPage() {
     };
   }, [load]);
 
-  const peopleOut = new Set(stories.map((s) => s.user_id)).size;
-  const placesLive = new Set(stories.map((s) => s.place_id)).size;
+  // « ta gang dehors » : mes ami·es, pas moi
+  const crew = stories.filter((s) => s.user_id !== profile?.id);
+  const peopleOut = new Set(crew.map((s) => s.user_id)).size;
+  const placesLive = new Set(crew.map((s) => s.place_id)).size;
   const firstName = (profile?.display_name || profile?.username || "").split(" ")[0];
 
   return (
@@ -114,14 +116,14 @@ export default function FeedPage() {
             {locale === "fr" ? (
               <>
                 {firstName ? `Hey ${firstName} — ` : ""}
-                <b className="text-accent">{peopleOut}</b> personnes sorties ·{" "}
-                <b className="text-text">{placesLive}</b> lieux qui bougent
+                <b className="text-accent">{peopleOut}</b> de ta gang dehors ·{" "}
+                <b className="text-text">{placesLive}</b> {placesLive > 1 ? "lieux" : "lieu"}
               </>
             ) : (
               <>
                 {firstName ? `Hey ${firstName} — ` : ""}
-                <b className="text-accent">{peopleOut}</b> people out ·{" "}
-                <b className="text-text">{placesLive}</b> places buzzing
+                <b className="text-accent">{peopleOut}</b> of your crew out ·{" "}
+                <b className="text-text">{placesLive}</b> {placesLive === 1 ? "place" : "places"}
               </>
             )}
           </p>

@@ -83,7 +83,13 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   if (mfa === "required") return <MfaChallenge onDone={() => setMfa("ok")} />;
   // 🧭 questionnaire d'onboarding pour les nouveaux comptes
   if (profile && profile.onboarded === false && !onboardDone) {
-    return <Onboarding onDone={() => setOnboardDone(true)} />;
+    // rendu AVANT le reste : il monte son propre <ToastHost /> pour que ses erreurs se voient
+    return (
+      <>
+        <Onboarding onDone={() => setOnboardDone(true)} />
+        <ToastHost />
+      </>
+    );
   }
 
   return (

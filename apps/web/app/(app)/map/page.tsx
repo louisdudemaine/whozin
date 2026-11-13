@@ -18,7 +18,7 @@ const MapView = dynamic(() => import("@/components/MapView").then((m) => m.MapVi
 });
 
 export default function MapPage() {
-  const { t } = useT();
+  const { t, locale } = useT();
   const [places, setPlaces] = useState<NearbyPlace[]>([]);
   const [center, setCenter] = useState(MONTREAL);
   const [userLoc, setUserLoc] = useState<{ lat: number; lng: number } | null>(null);
@@ -82,12 +82,18 @@ export default function MapPage() {
         load(center.lat, center.lng);
       })
       .subscribe();
+    // seuls MES check-ins et ceux de mes ami·es arrivent en direct (RLS) : le compte des autres se relit chaque minute
+    const iv = setInterval(() => {
+      if (document.visibilityState === "visible") load(center.lat, center.lng);
+    }, 60_000);
     return () => {
+      clearInterval(iv);
       supabase.removeChannel(channel);
     };
   }, [center.lat, center.lng, load]);
 
   const totalActive = places.reduce((s, p) => s + p.active_checkins, 0);
+  const livePlaces = places.filter((p) => p.active_checkins > 0).length;
 
   return (
     <div className="relative h-[100dvh]">
@@ -108,7 +114,8 @@ export default function MapPage() {
           <span className="h-4 w-px bg-border" />
           <span className="text-xs text-text-dim">
             <b className="text-accent">{totalActive}</b> {t.map.activeNow} ·{" "}
-            <b className="text-text">{places.length}</b> {t.map.activePlaces}
+            <b className="text-text">{livePlaces}</b>{" "}
+            {(locale === "fr" ? livePlaces > 1 : livePlaces !== 1) ? t.map.activePlaces : t.map.activePlace}
           </span>
         </div>
         <LocationToggle />

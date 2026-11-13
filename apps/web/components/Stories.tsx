@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getCategory, MONTREAL, type NearbyPlace, type UserStories } from "@whosin/shared";
+import { estTexteInterdit, getCategory, MONTREAL, type NearbyPlace, type UserStories } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import { toast } from "@/lib/toast";
@@ -10,6 +10,7 @@ import {
   fetchStories,
   markStoryViewed,
   publishStory,
+  removeMedia,
   storyViewerCount,
   uploadMedia,
 } from "@/lib/data";
@@ -274,7 +275,7 @@ function StoryViewer({
 
 function StoryComposer({ onClose, onPublished }: { onClose: () => void; onPublished: () => void }) {
   const { profile } = useAuth();
-  const { locale } = useT();
+  const { t, locale } = useT();
   const fr = locale === "fr";
   const [file, setFile] = useState<File | null>(null);
   const [isVideo, setIsVideo] = useState(false);
@@ -302,15 +303,26 @@ function StoryComposer({ onClose, onPublished }: { onClose: () => void; onPublis
   async function publish() {
     if (!profile || !file || tooLong) return;
     setBusy(true);
+    let url: string | null = null;
     try {
-      const url = await uploadMedia(file, profile.id);
+      url = await uploadMedia(file, profile.id);
       await publishStory(profile.id, url, caption.trim() || null, placeId, isVideo ? "video" : "image");
-      onPublished();
-    } catch {
-      toast(fr ? "Story non publiée (photo ou vidéo, 50 Mo max.)" : "Story not posted (photo or video, 50 MB max)", "error");
+    } catch (e) {
+      // refusée après le dépôt : le média ne reste pas en ligne dans le bucket public
+      if (url) removeMedia(url);
+      toast(
+        estTexteInterdit(e)
+          ? t.common.forbiddenWord
+          : fr
+            ? "Story non publiée (photo ou vidéo, 50 Mo max.)"
+            : "Story not posted (photo or video, 50 MB max)",
+        "error"
+      );
+      return;
     } finally {
       setBusy(false);
     }
+    onPublished();
   }
 
   return (

@@ -317,7 +317,10 @@ export async function fetchProfileStats(
   const [followers, following, checkins, isFollowing] = await Promise.all([
     supabase.from("follows").select("follower_id", { count: "exact", head: true }).eq("following_id", profileId),
     supabase.from("follows").select("following_id", { count: "exact", head: true }).eq("follower_id", profileId),
-    supabase.from("check_ins").select("id", { count: "exact", head: true }).eq("user_id", profileId),
+    // check-ins d'autrui : la base n'en montre qu'une partie (amis mutuels, actifs) → compte réservé à MON profil
+    viewerId === profileId
+      ? supabase.from("check_ins").select("id", { count: "exact", head: true }).eq("user_id", profileId)
+      : Promise.resolve({ count: 0 }),
     viewerId
       ? supabase
           .from("follows")
@@ -1174,6 +1177,17 @@ export async function uploadMedia(raw: File, userId: string): Promise<string> {
   });
   if (error) throw error;
   return supabase.storage.from("media").getPublicUrl(path).data.publicUrl;
+}
+
+/** Retire un fichier de « media » d'après son URL publique (publication refusée après le dépôt). Ne lève jamais. */
+export async function removeMedia(publicUrl: string): Promise<void> {
+  const path = publicUrl.split("/object/public/media/")[1];
+  if (!path) return;
+  try {
+    await getSupabase().storage.from("media").remove([decodeURIComponent(path)]);
+  } catch {
+    /* au mieux : sinon le fichier part avec le compte */
+  }
 }
 
 /** 📷 Photo de message (et snap) : bucket PRIVÉ « chat », chemin <conversation>/<moi>/<aléa>.<ext>. Renvoie le CHEMIN. */

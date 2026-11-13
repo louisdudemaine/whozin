@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import type { Post, Profile } from "@whosin/shared";
+import { estTexteInterdit } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useT } from "@/lib/locale";
 import {
@@ -101,11 +102,13 @@ export function ProfileView({ profile }: { profile: Profile }) {
     } catch (e) {
       // contrainte de la migration D : 50 caractères, « whozin » réservé à l'app
       setSaveErr(
-        String((e as { message?: string })?.message).includes("profiles_display_name_check")
-          ? locale === "fr"
-            ? "Nom refusé (50 caractères max., « Whozin » réservé)."
-            : "Name refused (50 characters max, “Whozin” is reserved)."
-          : t.common.error
+        estTexteInterdit(e)
+          ? t.common.forbiddenWord
+          : String((e as { message?: string })?.message).includes("profiles_display_name_check")
+            ? locale === "fr"
+              ? "Nom refusé (50 caractères max., « Whozin » réservé)."
+              : "Name refused (50 characters max, “Whozin” is reserved)."
+            : t.common.error
       );
     } finally {
       setBusy(false);
@@ -183,7 +186,8 @@ export function ProfileView({ profile }: { profile: Profile }) {
             <Avatar profile={profile} size={72} />
           )}
           <div className="flex flex-1 justify-around text-center">
-            <Stat n={stats?.checkins ?? 0} label={t.profile.checkins} />
+            {/* les check-ins d'autrui ne sont pas lisibles (amis mutuels : actifs seulement) : compte montré sur MON profil seulement */}
+            {isMe && <Stat n={stats?.checkins ?? 0} label={t.profile.checkins} />}
             <Stat n={stats?.followers ?? 0} label={t.profile.followers} />
             <Stat n={stats?.following ?? 0} label={t.profile.following} />
           </div>
@@ -432,8 +436,8 @@ export function ProfileView({ profile }: { profile: Profile }) {
                     ? "Tes amis (mutuels, en Proximité aussi) voient quand tu es à <150 m — jamais ta position exacte."
                     : "Mutual friends (also in Proximity) see when you're within 150 m — never your exact spot."
                   : locale === "fr"
-                    ? "Tu apparais au lieu, sans GPS exact. Recommandé."
-                    : "You show at the venue, no exact GPS. Recommended."}
+                    ? "Tes ami·es mutuel·les te voient au lieu ; les autres ne voient jamais ton nom, ta présence peut seulement compter dans un nombre de personnes (jamais sous 3). Une story ou une publication publique liée à un lieu reste visible de tous. Recommandé."
+                    : "Mutual friends see you at the venue; others never see your name, you may only count in a head count (never under 3). A story or public post tagged with a venue stays visible to everyone. Recommended."}
             </p>
 
             {/* mode pro 💼 */}

@@ -4,6 +4,7 @@ import { use, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import type { EphemeralMode, Message, Profile } from "@whosin/shared";
+import { estTexteInterdit } from "@whosin/shared";
 import { useAuth } from "@/lib/auth";
 import { useCall } from "@/lib/calls";
 import { pushNotify } from "@/lib/push";
@@ -28,6 +29,7 @@ import {
   uploadChatPhoto,
 } from "@/lib/data";
 import { Avatar } from "@/components/Avatar";
+import { SafetyMenu } from "@/components/SafetyMenu";
 import { icebreakers } from "@/lib/icebreakers";
 import { findSpotifyLink, SpotifyEmbed } from "@/lib/spotify";
 import { PollCard, PollComposer } from "@/components/Poll";
@@ -57,7 +59,15 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
   // 📸 snaps
   const [snapDraft, setSnapDraft] = useState<{ file: File; url: string } | null>(null);
   const [snapViewOnce, setSnapViewOnce] = useState(true);
-  const [snapView, setSnapView] = useState<{ url: string; path: string; left: number } | null>(null);
+  const [snapView, setSnapView] = useState<{
+    id: string;
+    senderId: string | null;
+    url: string;
+    path: string;
+    left: number;
+  } | null>(null);
+  // menu de signalement ouvert dans la visionneuse : le décompte attend
+  const [snapMenu, setSnapMenu] = useState(false);
   // 📷 photos du bucket privé « chat » : chemin -> adresse signée
   const [signed, setSigned] = useState<Record<string, string>>({});
   const signAsked = useRef(new Set<string>());
@@ -188,16 +198,17 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     return () => window.removeEventListener("keyup", onKey);
   }, [id, meId]);
 
-  // 📸 décompte de la visionneuse de snap (8 s) puis fermeture
+  // 📸 décompte de la visionneuse de snap (8 s) puis fermeture ; en pause pendant un signalement
   useEffect(() => {
-    if (!snapView) return;
+    if (!snapView || snapMenu) return;
     if (snapView.left <= 0) {
+      forgetSnap(snapView.path).catch(() => {});
       setSnapView(null);
       return;
     }
     const t = setTimeout(() => setSnapView((s) => (s ? { ...s, left: s.left - 1 } : null)), 1000);
     return () => clearTimeout(t);
-  }, [snapView]);
+  }, [snapView, snapMenu]);
 
   async function pickEphemeral(mode: EphemeralMode) {
     setEphemeral(mode);
@@ -229,8 +240,9 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     try {
       await sendMessage(id, meId, body);
       notifyOthers(body);
-    } catch {
+    } catch (e) {
       setText(body);
+      toast(estTexteInterdit(e) ? t.common.forbiddenWord : t.common.error, "error");
     }
   }
 
@@ -272,14 +284,23 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     try {
       const path = await openSnap(messageId);
       if (!path) return;
+      const senderId = messages.find((x) => x.id === messageId)?.sender_id ?? null;
       setMessages((prev) =>
         prev.map((x) => (x.id === messageId ? { ...x, opened_at: new Date().toISOString() } : x))
       );
       const url = (await signChatPhotos([path], 30))[path];
-      if (url) setSnapView({ url, path, left: 8 });
+      if (url) setSnapView({ id: messageId, senderId, url, path, left: 8 });
     } catch {
       /* ignore */
     }
+  }
+
+  // le fichier est effacé à la FERMETURE, pas au chargement : on peut signaler le snap pendant qu'on le voit
+  // (un snap signalé reste ensuite protégé par la base ; l'effacement est alors refusé, sans bruit)
+  function closeSnap() {
+    if (snapView) forgetSnap(snapView.path).catch(() => {});
+    setSnapView(null);
+    setSnapMenu(false);
   }
 
   async function doAccept() {
@@ -666,15 +687,28 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
       {snapView && (
         <div
           className="fixed inset-0 z-[95] flex flex-col bg-black"
-          onClick={() => setSnapView(null)}
+          onClick={closeSnap}
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={snapView.url}
             alt=""
             className="min-h-0 flex-1 object-contain"
-            onLoad={() => forgetSnap(snapView.path).catch(() => {})}
           />
+          {snapView.senderId && (
+            // le clic sur le menu ne ferme pas la visionneuse
+            <div
+              className="absolute left-4 top-[max(16px,env(safe-area-inset-top))] rounded-full bg-black/60"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <SafetyMenu
+                targetType="message"
+                targetId={snapView.id}
+                targetUserId={snapView.senderId}
+                onOpenChange={setSnapMenu}
+              />
+            </div>
+          )}
           <div className="absolute right-4 top-[max(16px,env(safe-area-inset-top))] flex h-10 w-10 items-center justify-center rounded-full bg-black/60 font-display text-base font-bold text-white">
             {snapView.left}
           </div>

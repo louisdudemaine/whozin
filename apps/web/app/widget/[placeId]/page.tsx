@@ -8,7 +8,7 @@ import { getSupabase } from "@/lib/supabase";
 interface WidgetData {
   name: string;
   category: string;
-  /** null sous le seuil d'anonymat (moins de 3 personnes) */
+  /** palier (3, 10 ou 25) ; null sous le seuil d'anonymat (moins de 3 personnes) */
   active: number | null;
   today: number | null;
   next_event: { title: string; starts_at: string } | null;
@@ -79,7 +79,7 @@ function WidgetInner() {
 
         <div className="mt-3 flex items-end gap-2">
           <span className="font-display text-5xl font-extrabold leading-none text-gradient">
-            {data.active ?? "0–2"}
+            {data.active == null ? "0–2" : `${data.active}+`}
           </span>
           <span className="pb-1 text-sm text-text-dim">
             {fr
