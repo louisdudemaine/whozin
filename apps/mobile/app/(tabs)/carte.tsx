@@ -24,6 +24,7 @@ import {
 import { useAuth } from "@/lib/auth";
 import { checkIn, fetchCheckIns, fetchNearby, getOrCreateConversation } from "@/lib/data";
 import { DOCK_SPACE, useC } from "@/lib/theme";
+import { openSafetyMenu } from "@/components/SafetyMenu";
 
 export default function MapTab() {
   const C = useC();
@@ -263,6 +264,28 @@ function PlaceModal({
                   }}
                 >
                   <Text style={{ color: C.text, fontSize: 12, fontWeight: "700" }}>✉️ Écrire</Text>
+                </Pressable>
+              )}
+              {userId && item.user_id !== userId && (
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel="Signaler ou bloquer"
+                  hitSlop={10}
+                  onPress={() =>
+                    openSafetyMenu({
+                      meId: userId,
+                      targetType: "profile",
+                      targetId: item.user_id,
+                      targetUserId: item.user_id,
+                      name: item.author?.username,
+                      onBlocked: () => {
+                        setList((l) => l.filter((c) => c.user_id !== item.user_id));
+                        onChanged();
+                      },
+                    })
+                  }
+                >
+                  <Text style={{ color: C.textDim, fontSize: 18, paddingHorizontal: 2 }}>⋯</Text>
                 </Pressable>
               )}
             </View>

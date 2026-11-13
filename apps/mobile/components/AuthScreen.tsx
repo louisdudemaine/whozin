@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   ActivityIndicator,
   KeyboardAvoidingView,
+  Linking,
   Platform,
   Pressable,
   ScrollView,
@@ -9,6 +10,7 @@ import {
   TextInput,
   View,
 } from "react-native";
+import { SITE } from "@/lib/data";
 import { getSupabase } from "@/lib/supabase";
 import { useC } from "@/lib/theme";
 
@@ -134,6 +136,20 @@ export function AuthScreen() {
             </Text>
           )}
         </Pressable>
+
+        {mode === "up" && (
+          <Text style={{ color: C.textDim, fontSize: 12, textAlign: "center", marginTop: 12, lineHeight: 17 }}>
+            En créant un compte, tu acceptes les{" "}
+            <Text accessibilityRole="link" style={{ color: C.text, fontWeight: "700" }} onPress={() => Linking.openURL(`${SITE}/conditions`)}>
+              Conditions d&apos;utilisation
+            </Text>{" "}
+            (aucune tolérance pour les contenus ou comportements abusifs) et la{" "}
+            <Text accessibilityRole="link" style={{ color: C.text, fontWeight: "700" }} onPress={() => Linking.openURL(`${SITE}/confidentialite`)}>
+              Politique de confidentialité
+            </Text>
+            .
+          </Text>
+        )}
 
         <Pressable onPress={() => setMode(mode === "in" ? "up" : "in")} style={{ marginTop: 16 }}>
           <Text style={{ color: C.textDim, textAlign: "center" }}>

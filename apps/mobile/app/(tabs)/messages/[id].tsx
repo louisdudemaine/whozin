@@ -32,6 +32,7 @@ import {
   signChatPhotos,
 } from "@/lib/data";
 import { useC } from "@/lib/theme";
+import { openSafetyMenu } from "@/components/SafetyMenu";
 
 export default function Thread() {
   const C = useC();
@@ -213,10 +214,29 @@ export default function Thread() {
               <Text style={{ fontSize: 20, opacity: ephemeral !== "off" ? 1 : 0.4 }}>🔥</Text>
             </Pressable>
           )}
+          {!isGroup && other && meId && (
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Signaler ou bloquer"
+              hitSlop={10}
+              onPress={() =>
+                openSafetyMenu({
+                  meId,
+                  targetType: "profile",
+                  targetId: other.id,
+                  targetUserId: other.id,
+                  name: other.username,
+                  onBlocked: () => router.replace("/messages"),
+                })
+              }
+            >
+              <Text style={{ color: C.textDim, fontSize: 22, paddingHorizontal: 2 }}>⋯</Text>
+            </Pressable>
+          )}
         </View>
       ),
     });
-  }, [isGroup, pending, ephemeral, chooseEphemeral, convId, navigation, router]);
+  }, [isGroup, pending, ephemeral, chooseEphemeral, convId, navigation, router, other, meId, C.textDim]);
 
   // 🔥 horloge : compte à rebours + retrait local des messages expirés
   useEffect(() => {
@@ -299,7 +319,25 @@ export default function Thread() {
                   ? `${Math.round(secsLeft / 60)} min`
                   : `${secsLeft} s`;
           return (
-            <View style={{ alignItems: mine ? "flex-end" : "flex-start", opacity: secsLeft !== null && secsLeft <= 10 ? 0.5 : 1 }}>
+            <Pressable
+              // appui long sur un message reçu : le signaler ou bloquer son auteur (Apple 1.2)
+              disabled={mine || !meId}
+              onLongPress={() =>
+                meId &&
+                openSafetyMenu({
+                  meId,
+                  targetType: "message",
+                  targetId: item.id,
+                  targetUserId: item.sender_id,
+                  name: isGroup ? null : other?.username,
+                  onBlocked: () =>
+                    isGroup
+                      ? setMessages((prev) => prev.filter((m) => m.sender_id !== item.sender_id))
+                      : router.replace("/messages"),
+                })
+              }
+              style={{ alignItems: mine ? "flex-end" : "flex-start", opacity: secsLeft !== null && secsLeft <= 10 ? 0.5 : 1 }}
+            >
               {item.view_once ? (
                 <View
                   style={{
@@ -338,7 +376,7 @@ export default function Thread() {
               {ttl && (
                 <Text style={{ color: C.brand, fontSize: 10, fontWeight: "800", marginTop: 2 }}>🔥 {ttl}</Text>
               )}
-            </View>
+            </Pressable>
           );
         }}
       />

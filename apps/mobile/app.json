@@ -12,7 +12,7 @@
       "backgroundColor": "#0a0a0f"
     },
     "ios": {
-      "supportsTablet": true,
+      "supportsTablet": false,
       "bundleIdentifier": "ca.whozin.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Whozin utilise ta position pour te montrer ce qui se passe autour de toi.",

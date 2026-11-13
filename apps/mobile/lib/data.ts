@@ -9,6 +9,9 @@ import type {
 } from "@whosin/shared";
 import { getSupabase } from "./supabase";
 
+/** Pages publiques du web (sans compte) : conditions, confidentialité. */
+export const SITE = "https://whos-in-ivory.vercel.app";
+
 /** Colonnes de profiles lisibles pour un AUTRE compte (liste blanche de la base). */
 export const PROFILE_COLS = "id,username,display_name,avatar_url,bio,created_at";
 
@@ -248,4 +251,55 @@ export async function unreadMessagesCount(meId: string): Promise<number> {
 
 export async function notifyScreenshot(convId: string): Promise<void> {
   await getSupabase().rpc("notify_screenshot", { conv: convId });
+}
+
+// ----- Sécurité et compte (parité web : SafetyMenu, page Sécurité) -----
+
+export type ReportType = "profile" | "post" | "message";
+
+/** Bloquer : la base masque ensuite publications, présence et messages dans les deux sens (blocked_with). */
+export async function blockUser(meId: string, targetId: string): Promise<void> {
+  const { error } = await getSupabase().from("blocks").insert({ blocker_id: meId, blocked_id: targetId });
+  if (error && !`${error.code}`.startsWith("23")) throw error; // doublon = déjà bloqué
+}
+
+export async function reportTarget(meId: string, type: ReportType, targetId: string, reason: string): Promise<void> {
+  const { error } = await getSupabase()
+    .from("reports")
+    .insert({ reporter_id: meId, target_type: type, target_id: targetId, reason });
+  if (error) throw error;
+}
+
+/** Portabilité (Loi 25) : tout ce que la base garde sur moi, en un objet JSON. */
+export async function exportMyData(): Promise<unknown> {
+  const { data, error } = await getSupabase().rpc("export_my_data");
+  if (error) throw error;
+  return data;
+}
+
+/**
+ * Droit à l'effacement : les fichiers du bucket public « media » partent AVANT la fiche (après, plus
+ * personne ne peut les lister). Au moindre échec on s'arrête : le compte reste et on réessaie.
+ * Les photos de messages (bucket privé « chat ») partent avec la purge serveur, une fois les messages effacés.
+ */
+export async function eraseMyAccount(uid: string): Promise<"files" | "account" | null> {
+  const supabase = getSupabase();
+  const media = supabase.storage.from("media");
+  try {
+    for (;;) {
+      const { data: files, error: listErr } = await media.list(uid, { limit: 1000 });
+      if (listErr) throw listErr;
+      const paths = (files ?? []).filter((f) => f.id).map((f) => `${uid}/${f.name}`);
+      if (!paths.length) break;
+      const { data: gone, error: rmErr } = await media.remove(paths);
+      if (rmErr) throw rmErr;
+      if (!gone?.length) throw new Error("aucun fichier effacé"); // refus muet de la RLS : on ne boucle pas
+    }
+  } catch {
+    return "files";
+  }
+  const { error } = await supabase.rpc("erase_my_account");
+  if (error) return "account";
+  await supabase.auth.signOut();
+  return null;
 }
