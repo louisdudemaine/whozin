@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { ActivityIndicator, Pressable, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, Text, TextInput } from "react-native";
 import { getSupabase } from "@/lib/supabase";
 import { useC } from "@/lib/theme";
 
@@ -15,24 +15,36 @@ export function MfaChallenge({ onDone }: { onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState<string | null>(null);
 
+  // Le facteur se lit d'abord dans la session (sans réseau) ; listFactors seulement en repli.
+  async function findFactor(): Promise<string | null> {
+    const local = (await supabase.auth.getSession()).data.session?.user.factors?.find(
+      (f) => f.factor_type === "totp" && f.status === "verified"
+    );
+    if (local) return local.id;
+    const { data } = await supabase.auth.mfa.listFactors();
+    return (data?.totp ?? []).find((f) => f.status === "verified")?.id ?? null;
+  }
+
   useEffect(() => {
-    supabase.auth.mfa.listFactors().then(({ data }) => {
-      setFactorId((data?.totp ?? []).find((f) => f.status === "verified")?.id ?? null);
-    });
-  }, [supabase]);
+    findFactor().then(setFactorId).catch(() => {});
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   async function verify() {
-    if (!factorId || code.length < 6) return;
+    if (code.length < 6) return;
     setBusy(true);
     setErr(null);
     try {
-      const { data: ch, error: e1 } = await supabase.auth.mfa.challenge({ factorId });
+      const fid = factorId ?? (await findFactor());
+      if (!fid) throw new Error("facteur introuvable");
+      setFactorId(fid);
+      const { data: ch, error: e1 } = await supabase.auth.mfa.challenge({ factorId: fid });
       if (e1) throw e1;
-      const { error: e2 } = await supabase.auth.mfa.verify({ factorId, challengeId: ch.id, code });
+      const { error: e2 } = await supabase.auth.mfa.verify({ factorId: fid, challengeId: ch.id, code });
       if (e2) throw e2;
       onDone();
     } catch {
-      setErr("Code invalide, réessaie.");
+      setErr("Code refusé ou connexion impossible, réessaie.");
       setCode("");
     } finally {
       setBusy(false);
@@ -40,7 +52,10 @@ export function MfaChallenge({ onDone }: { onDone: () => void }) {
   }
 
   return (
-    <View style={{ flex: 1, backgroundColor: C.bg, alignItems: "center", justifyContent: "center", padding: 32 }}>
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={{ flex: 1, backgroundColor: C.bg, alignItems: "center", justifyContent: "center", padding: 32 }}
+    >
       <Text style={{ fontSize: 40 }}>🔐</Text>
       <Text style={{ color: C.text, fontSize: 22, fontWeight: "900", marginTop: 16 }}>Vérification en deux étapes</Text>
       <Text style={{ color: C.textDim, marginTop: 6, textAlign: "center" }}>
@@ -78,7 +93,7 @@ export function MfaChallenge({ onDone }: { onDone: () => void }) {
       <Pressable
         accessibilityRole="button"
         onPress={verify}
-        disabled={busy || code.length < 6 || !factorId}
+        disabled={busy || code.length < 6}
         style={{
           marginTop: 20,
           alignSelf: "stretch",
@@ -86,7 +101,7 @@ export function MfaChallenge({ onDone }: { onDone: () => void }) {
           borderRadius: 999,
           paddingVertical: 15,
           alignItems: "center",
-          opacity: busy || code.length < 6 || !factorId ? 0.5 : 1,
+          opacity: busy || code.length < 6 ? 0.5 : 1,
         }}
       >
         {busy ? <ActivityIndicator color="#fff" /> : <Text style={{ color: "#fff", fontWeight: "800" }}>Déverrouiller</Text>}
@@ -94,6 +109,6 @@ export function MfaChallenge({ onDone }: { onDone: () => void }) {
       <Pressable onPress={() => supabase.auth.signOut()} style={{ marginTop: 16 }} hitSlop={8}>
         <Text style={{ color: C.textDim }}>Se déconnecter</Text>
       </Pressable>
-    </View>
+    </KeyboardAvoidingView>
   );
 }

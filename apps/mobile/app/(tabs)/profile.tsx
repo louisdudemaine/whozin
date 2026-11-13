@@ -9,7 +9,8 @@ const CONTACT = "privacy@whozin.app";
 
 export default function ProfileTab() {
   const C = useC();
-  const { profile, signOut } = useAuth();
+  const { session, profile, signOut, refreshProfile } = useAuth();
+  const uid = session?.user.id;
   const [stats, setStats] = useState({ followers: 0, following: 0, checkins: 0 });
   const [busy, setBusy] = useState<"export" | "erase" | null>(null);
 
@@ -25,7 +26,17 @@ export default function ProfileTab() {
     );
   }, [profile]);
 
-  if (!profile) return null;
+  // Sans fiche (réseau faible au lancement), la déconnexion et la suppression du compte restent offertes.
+  if (!profile) {
+    return (
+      <View style={{ flex: 1, backgroundColor: C.bg, padding: 20, justifyContent: "center" }}>
+        <Text style={{ color: C.textDim, textAlign: "center", marginBottom: 12 }}>Ton profil n&apos;a pas pu se charger.</Text>
+        <Button label="Réessayer" onPress={() => refreshProfile()} />
+        <Button label="Se déconnecter" onPress={signOut} />
+        {uid && <Button label="Supprimer mon compte" onPress={() => confirmErase(uid)} danger />}
+      </View>
+    );
+  }
 
   async function exportData() {
     setBusy("export");
@@ -39,7 +50,7 @@ export default function ProfileTab() {
     }
   }
 
-  function confirmErase() {
+  function confirmErase(id: string) {
     Alert.alert(
       "Supprimer ton compte ?",
       "Ta fiche, tes publications, tes check-ins, tes messages et tes photos sont effacés pour de bon. C'est irréversible.",
@@ -49,9 +60,8 @@ export default function ProfileTab() {
           text: "Supprimer",
           style: "destructive",
           onPress: async () => {
-            if (!profile) return;
             setBusy("erase");
-            const echec = await eraseMyAccount(profile.id);
+            const echec = await eraseMyAccount(id);
             if (echec) {
               setBusy(null);
               Alert.alert(
@@ -95,7 +105,7 @@ export default function ProfileTab() {
         <Button label={busy === "export" ? "Export…" : "⬇️ Exporter mes données"} onPress={exportData} disabled={!!busy} />
         <Button
           label={busy === "erase" ? "Suppression…" : "Supprimer mon compte"}
-          onPress={confirmErase}
+          onPress={() => confirmErase(profile.id)}
           disabled={!!busy}
           danger
         />

@@ -30,7 +30,20 @@ export class ErrorBoundary extends Component<{ children: ReactNode }, { error: E
           </Text>
           <Pressable
             accessibilityRole="button"
-            onPress={() => this.setState({ error: null })}
+            onPress={async () => {
+              // une mise à jour à distance cassée ne doit pas rester coincée : on va chercher la
+              // suivante (le correctif) puis on recharge ; en développement, simple nouvel essai
+              try {
+                if (__DEV__) throw new Error("dev");
+                // import tardif : un binaire sans le module natif ExpoUpdates retombe sur le nouvel essai
+                const Updates = await import("expo-updates");
+                const r = await Updates.checkForUpdateAsync();
+                if (r.isAvailable) await Updates.fetchUpdateAsync();
+                await Updates.reloadAsync();
+              } catch {
+                this.setState({ error: null });
+              }
+            }}
             style={{ marginTop: 24, backgroundColor: "#ff2e63", borderRadius: 999, paddingVertical: 14, paddingHorizontal: 32 }}
           >
             <Text style={{ color: "#fff", fontWeight: "800" }}>Réessayer</Text>

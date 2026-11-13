@@ -48,8 +48,8 @@ export default function TermsPage() {
 
         <Section title={fr ? "Signaler et bloquer" : "Report and block"}>
           {fr
-            ? "Le menu ⋯ permet de signaler ou de bloquer, sur une publication, un profil, une présence ou une conversation ; dans un fil de l'app, un appui long sur un message reçu fait de même. Le blocage est immédiat et vaut dans les deux sens : publications, présences et messages."
-            : "The ⋯ menu lets you report or block, on a post, a profile, a check-in or a conversation; in an app chat, long-press a received message to do the same. Blocking is immediate and works both ways: posts, check-ins and messages."}
+            ? "Dans l'app, le menu ⋯ d'une publication, d'une présence ou d'une conversation permet de signaler ou de bloquer, et un appui long sur un message reçu fait de même ; sur le web, le menu ⋯ d'une publication, d'une story ou d'un profil. Le blocage est immédiat : vous ne voyez plus vos publications ni vos présences, dans les deux sens, et vous ne pouvez plus vous écrire en privé."
+            : "In the app, the ⋯ menu on a post, a check-in or a conversation lets you report or block, and long-pressing a received message does the same; on the web, the ⋯ menu on a post, a story or a profile. Blocking is immediate: you no longer see each other's posts or check-ins, both ways, and you can no longer message each other privately."}
         </Section>
 
         <Section title={fr ? "Ce que nous faisons d'un signalement" : "What we do with a report"}>
@@ -60,8 +60,8 @@ export default function TermsPage() {
 
         <Section title={fr ? "Ton contenu" : "Your content"}>
           {fr
-            ? "Ce que tu publies reste à toi. Tu nous permets seulement de l'afficher aux personnes que tu as choisies, dans l'app. Tu peux le retirer, et supprimer ton compte efface ton contenu."
-            : "What you post stays yours. You only allow us to show it, in the app, to the people you chose. You can remove it, and deleting your account erases your content."}
+            ? "Ce que tu publies reste à toi. Tu nous permets seulement de l'afficher aux personnes que tu as choisies, dans l'app. Tes présences expirent d'elles-mêmes, et supprimer ton compte efface tout ton contenu."
+            : "What you post stays yours. You only allow us to show it, in the app, to the people you chose. Your check-ins expire on their own, and deleting your account erases all your content."}
         </Section>
 
         <Section title={fr ? "Ta position et ta sécurité" : "Your location and your safety"}>
@@ -94,10 +94,10 @@ export default function TermsPage() {
       </div>
 
       <Link
-        href="/feed"
+        href="/"
         className="brand-gradient pressable mt-8 inline-block rounded-full px-7 py-3 font-display text-sm font-bold text-white no-underline"
       >
-        ← {fr ? "Retour à l'app" : "Back to the app"}
+        ← {fr ? "Accueil Whozin" : "Whozin home"}
       </Link>
     </div>
   );

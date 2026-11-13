@@ -34,6 +34,7 @@ export function AuthScreen() {
   const [password, setPassword] = useState("");
   const [username, setUsername] = useState("");
   const [birthdate, setBirthdate] = useState("");
+  const [terms, setTerms] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -62,10 +63,14 @@ export function AuthScreen() {
           setMsg("Whozin, c'est 16 ans et plus. Reviens-nous vite! 🌙");
           return;
         }
+        if (!terms) {
+          setMsg("Coche l'acceptation des conditions d'utilisation pour créer ton compte.");
+          return;
+        }
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { username: u, birthdate: birthdate.trim() } },
+          options: { data: { username: u, birthdate: birthdate.trim(), terms_accepted_at: new Date().toISOString() } },
         });
         // seul refus possible du serveur à l'inscription : l'âge (jour civil de Montréal)
         if (error && /database error saving new user/i.test(error.message)) {
@@ -123,6 +128,28 @@ export function AuthScreen() {
           </Text>
         )}
 
+        {mode === "up" && (
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: terms }}
+            onPress={() => setTerms(!terms)}
+            style={{ flexDirection: "row", alignItems: "flex-start", gap: 10, marginBottom: 14 }}
+          >
+            <Text style={{ fontSize: 18, color: terms ? C.brand : C.textDim }}>{terms ? "☑︎" : "☐"}</Text>
+            <Text style={{ flex: 1, color: C.textDim, fontSize: 12, lineHeight: 17 }}>
+              J&apos;accepte les{" "}
+            <Text accessibilityRole="link" style={{ color: C.text, fontWeight: "700" }} onPress={() => Linking.openURL(`${SITE}/conditions`)}>
+              Conditions d&apos;utilisation
+            </Text>{" "}
+            (aucune tolérance pour les contenus ou comportements abusifs) et la{" "}
+            <Text accessibilityRole="link" style={{ color: C.text, fontWeight: "700" }} onPress={() => Linking.openURL(`${SITE}/confidentialite`)}>
+              Politique de confidentialité
+            </Text>
+            .
+            </Text>
+          </Pressable>
+        )}
+
         <Pressable
           onPress={submit}
           disabled={busy}
@@ -137,19 +164,6 @@ export function AuthScreen() {
           )}
         </Pressable>
 
-        {mode === "up" && (
-          <Text style={{ color: C.textDim, fontSize: 12, textAlign: "center", marginTop: 12, lineHeight: 17 }}>
-            En créant un compte, tu acceptes les{" "}
-            <Text accessibilityRole="link" style={{ color: C.text, fontWeight: "700" }} onPress={() => Linking.openURL(`${SITE}/conditions`)}>
-              Conditions d&apos;utilisation
-            </Text>{" "}
-            (aucune tolérance pour les contenus ou comportements abusifs) et la{" "}
-            <Text accessibilityRole="link" style={{ color: C.text, fontWeight: "700" }} onPress={() => Linking.openURL(`${SITE}/confidentialite`)}>
-              Politique de confidentialité
-            </Text>
-            .
-          </Text>
-        )}
 
         <Pressable onPress={() => setMode(mode === "in" ? "up" : "in")} style={{ marginTop: 16 }}>
           <Text style={{ color: C.textDim, textAlign: "center" }}>

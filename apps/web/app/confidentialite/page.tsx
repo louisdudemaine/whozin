@@ -120,14 +120,14 @@ export default function PrivacyPage() {
         <Section title={fr ? "Responsable & contact" : "Officer & contact"}>
           {fr ? (
             <>
-              Responsable de la protection des renseignements personnels : l'équipe Whozin —{" "}
+              Responsable de la protection des renseignements personnels : le fondateur de Whozin —{" "}
               <span className="text-brand-2">privacy@whozin.app</span>. Toute atteinte à la
               confidentialité présentant un risque sérieux serait notifiée à la Commission d'accès à
               l'information du Québec et aux personnes concernées.
             </>
           ) : (
             <>
-              Privacy officer: the Whozin team — <span className="text-brand-2">privacy@whozin.app</span>.
+              Privacy officer: the founder of Whozin — <span className="text-brand-2">privacy@whozin.app</span>.
               Any confidentiality incident presenting serious risk would be reported to Québec's
               Commission d'accès à l'information and to affected users.
             </>

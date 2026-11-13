@@ -69,7 +69,8 @@ export function AuthScreen() {
         const { error } = await supabase.auth.signUp({
           email,
           password,
-          options: { data: { username: u, display_name: displayName, birthdate } },
+          // l'inscription vaut acceptation des conditions (texte sous le bouton) : on garde la date
+          options: { data: { username: u, display_name: displayName, birthdate, terms_accepted_at: new Date().toISOString() } },
         });
         // seul refus possible du serveur à l'inscription : l'âge (jour civil de Montréal)
         if (error && /database error saving new user/i.test(error.message)) {
@@ -217,7 +218,11 @@ export function AuthScreen() {
             </button>
             {mode === "up" && (
               <p className="text-center text-[11px] leading-relaxed text-text-dim">
-                {fr ? "En créant un compte, tu acceptes notre " : "By creating an account, you accept our "}
+                {fr ? "En créant un compte, tu acceptes nos " : "By creating an account, you accept our "}
+                <a href="/conditions" className="font-bold text-brand-2 underline">
+                  {fr ? "conditions d'utilisation" : "terms of use"}
+                </a>
+                {fr ? " (aucune tolérance pour les abus) et notre " : " (zero tolerance for abuse) and our "}
                 <a href="/confidentialite" className="font-bold text-brand-2 underline">
                   {fr ? "politique de confidentialité" : "privacy policy"}
                 </a>

@@ -28,7 +28,7 @@ import { openSafetyMenu } from "@/components/SafetyMenu";
 
 export default function MapTab() {
   const C = useC();
-  const { profile } = useAuth();
+  const { session } = useAuth();
   const [places, setPlaces] = useState<NearbyPlace[]>([]);
   const [center, setCenter] = useState(MONTREAL);
   const [loading, setLoading] = useState(true);
@@ -141,7 +141,7 @@ export default function MapTab() {
 
       <PlaceModal
         place={selected}
-        userId={profile?.id ?? null}
+        userId={session?.user.id ?? null}
         onClose={() => setSelected(null)}
         onChanged={() => load(center.lat, center.lng)}
       />

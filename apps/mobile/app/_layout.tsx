@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from "@/lib/auth";
 import { AuthScreen } from "@/components/AuthScreen";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { MfaChallenge } from "@/components/MfaChallenge";
+import { TermsGate } from "@/components/TermsGate";
 import { getSupabase } from "@/lib/supabase";
 import { useC } from "@/lib/theme";
 
@@ -33,6 +34,8 @@ function Gate() {
   }
   if (!session) return <AuthScreen />;
   if (mfa === "required") return <MfaChallenge onDone={() => setMfa("ok")} />;
+  // Apple 1.2 : conditions acceptées par chaque compte, y compris ceux d'avant et celui d'essai
+  if (!session.user.user_metadata?.terms_accepted_at) return <TermsGate />;
   return <Slot />;
 }
 

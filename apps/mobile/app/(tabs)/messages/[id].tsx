@@ -43,7 +43,7 @@ export default function Thread() {
   const headerHeight = useHeaderHeight();
   const { id } = useLocalSearchParams<{ id: string }>();
   const convId = String(id);
-  const { profile } = useAuth();
+  const { session } = useAuth();
   const navigation = useNavigation();
   const router = useRouter();
   const [messages, setMessages] = useState<Message[]>([]);
@@ -59,7 +59,8 @@ export default function Thread() {
   const [signed, setSigned] = useState<Record<string, string>>({});
   const signAsked = useRef(new Set<string>());
   const listRef = useRef<FlatList<Message>>(null);
-  const meId = profile?.id;
+  // identifiant de la session : présent même si la fiche (my_profile) n'a pas pu se charger
+  const meId = session?.user.id;
 
   // 📷 chaque photo « chat » est signée une seule fois ; pas de nouvel essai si l'appel échoue (rouvrir le fil re-signe)
   useEffect(() => {
@@ -226,7 +227,7 @@ export default function Thread() {
                   targetId: other.id,
                   targetUserId: other.id,
                   name: other.username,
-                  onBlocked: () => router.replace("/messages"),
+                  onBlocked: () => router.back(),
                 })
               }
             >
@@ -319,22 +320,24 @@ export default function Thread() {
                   ? `${Math.round(secsLeft / 60)} min`
                   : `${secsLeft} s`;
           return (
-            <Pressable
-              // appui long sur un message reçu : le signaler ou bloquer son auteur (Apple 1.2)
-              disabled={mine || !meId}
-              onLongPress={() =>
-                meId &&
-                openSafetyMenu({
-                  meId,
-                  targetType: "message",
-                  targetId: item.id,
-                  targetUserId: item.sender_id,
-                  name: isGroup ? null : other?.username,
-                  onBlocked: () =>
-                    isGroup
-                      ? setMessages((prev) => prev.filter((m) => m.sender_id !== item.sender_id))
-                      : router.replace("/messages"),
-                })
+            <Bubble
+              // appui long (ou action VoiceOver) sur un message reçu : le signaler ou bloquer son auteur (Apple 1.2)
+              onSafety={
+                mine || !meId
+                  ? undefined
+                  : () =>
+                      openSafetyMenu({
+                        meId,
+                        targetType: "message",
+                        targetId: item.id,
+                        targetUserId: item.sender_id,
+                        name: isGroup ? null : other?.username,
+                        onReported: () => setMessages((prev) => prev.filter((m) => m.id !== item.id)),
+                        onBlocked: () =>
+                          isGroup
+                            ? setMessages((prev) => prev.filter((m) => m.sender_id !== item.sender_id))
+                            : router.back(),
+                      })
               }
               style={{ alignItems: mine ? "flex-end" : "flex-start", opacity: secsLeft !== null && secsLeft <= 10 ? 0.5 : 1 }}
             >
@@ -376,7 +379,7 @@ export default function Thread() {
               {ttl && (
                 <Text style={{ color: C.brand, fontSize: 10, fontWeight: "800", marginTop: 2 }}>🔥 {ttl}</Text>
               )}
-            </Pressable>
+            </Bubble>
           );
         }}
       />
@@ -456,5 +459,29 @@ export default function Thread() {
         </View>
       )}
     </KeyboardAvoidingView>
+  );
+}
+
+/** Message reçu : appui long = signaler/bloquer, aussi offert à VoiceOver. Mes messages : simple vue. */
+function Bubble({
+  onSafety,
+  style,
+  children,
+}: {
+  onSafety?: () => void;
+  style: React.ComponentProps<typeof View>["style"];
+  children: React.ReactNode;
+}) {
+  if (!onSafety) return <View style={style}>{children}</View>;
+  return (
+    <Pressable
+      onLongPress={onSafety}
+      accessibilityHint="Appui long pour signaler ou bloquer"
+      accessibilityActions={[{ name: "longpress", label: "Signaler ou bloquer" }]}
+      onAccessibilityAction={(e) => e.nativeEvent.actionName === "longpress" && onSafety()}
+      style={style}
+    >
+      {children}
+    </Pressable>
   );
 }

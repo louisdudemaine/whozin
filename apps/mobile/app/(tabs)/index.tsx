@@ -17,7 +17,7 @@ import { openSafetyMenu } from "@/components/SafetyMenu";
 
 export default function FeedTab() {
   const C = useC();
-  const { profile } = useAuth();
+  const { session } = useAuth();
   const router = useRouter();
   const [posts, setPosts] = useState<Post[]>([]);
   const [stories, setStories] = useState<CheckIn[]>([]);
@@ -50,8 +50,9 @@ export default function FeedTab() {
       renderItem={({ item }) => (
         <PostCard
           post={item}
-          userId={profile?.id ?? null}
+          userId={session?.user.id ?? null}
           onOpenProfile={(u) => router.push(`/(tabs)/profile`)}
+          onReported={(postId) => setPosts((ps) => ps.filter((x) => x.id !== postId))}
           onBlocked={(uid) => {
             // la base les masque désormais ; on les retire tout de suite de l'écran
             setPosts((ps) => ps.filter((x) => x.user_id !== uid));
@@ -117,11 +118,13 @@ function PostCard({
   userId,
   onOpenProfile,
   onBlocked,
+  onReported,
 }: {
   post: Post;
   userId: string | null;
   onOpenProfile: (u: string) => void;
   onBlocked: (userId: string) => void;
+  onReported: (postId: string) => void;
 }) {
   const C = useC();
   const [liked, setLiked] = useState(!!post.liked_by_me);
@@ -172,6 +175,7 @@ function PostCard({
                 targetUserId: post.user_id,
                 name: post.author?.username,
                 onBlocked: () => onBlocked(post.user_id),
+                onReported: () => onReported(post.id),
               })
             }
           >

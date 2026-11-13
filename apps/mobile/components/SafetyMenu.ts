@@ -53,6 +53,8 @@ export async function openSafetyMenu(o: {
   targetUserId: string;
   name?: string | null;
   onBlocked?: () => void;
+  /** retire l'objet signalé de l'écran de la personne qui signale */
+  onReported?: () => void;
 }) {
   if (o.targetUserId === o.meId) return;
   const who = o.name || "cette personne";
@@ -63,12 +65,16 @@ export async function openSafetyMenu(o: {
     const [key, label] = REASONS[r];
     try {
       await reportTarget(o.meId, o.targetType, o.targetId, `${key}: ${label}`);
-      Alert.alert("Merci, signalement reçu 🙏", "Tu peux aussi bloquer cette personne.");
+      o.onReported?.();
+      Alert.alert(
+        "Merci, signalement reçu 🙏",
+        `${o.onReported ? "On l'a retiré de ton écran. " : ""}Tu peux aussi bloquer cette personne.`
+      );
     } catch {
       Alert.alert("Signalement non envoyé", "Réessaie dans un instant.");
     }
   } else if (i === 1) {
-    Alert.alert(`Bloquer ${who} ?`, "Vous ne verrez plus vos publications, vos présences ni vos messages, dans les deux sens.", [
+    Alert.alert(`Bloquer ${who} ?`, "Vous ne verrez plus vos publications ni vos présences, dans les deux sens, et vous ne pourrez plus vous écrire en privé.", [
       { text: "Annuler", style: "cancel" },
       {
         text: "Bloquer",
