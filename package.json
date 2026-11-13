@@ -10,7 +10,8 @@
   "scripts": {
     "web": "npm run dev --workspace @whosin/web",
     "web:build": "npm run build --workspace @whosin/web",
-    "mobile": "npm run start --workspace @whosin/mobile"
+    "mobile": "npm run start --workspace @whosin/mobile",
+    "deploy:purge-chat": "supabase functions deploy purge-chat --no-verify-jwt --project-ref aovuweoehzflydjtxpdr"
   },
   "engines": {
     "node": ">=20"
