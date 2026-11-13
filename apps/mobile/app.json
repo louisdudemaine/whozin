@@ -45,6 +45,12 @@
         "projectId": "b2ee4b25-1677-4d74-a27d-182b85759deb"
       }
     },
-    "owner": "louisdudemaine"
+    "owner": "louisdudemaine",
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/b2ee4b25-1677-4d74-a27d-182b85759deb"
+    }
   }
 }

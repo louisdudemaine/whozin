@@ -10,15 +10,21 @@
     },
     "preview": {
       "distribution": "internal",
-      "ios": { "simulator": false }
+      "ios": {
+        "simulator": false
+      },
+      "channel": "preview"
     },
     "production": {
-      "autoIncrement": true
+      "autoIncrement": true,
+      "channel": "production"
     }
   },
   "submit": {
     "production": {
-      "ios": { "ascAppId": "6780327501" }
+      "ios": {
+        "ascAppId": "6780327501"
+      }
     }
   }
 }
