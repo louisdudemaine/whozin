@@ -20,6 +20,20 @@ function cleService(): string {
   return Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 }
 
+/** Signal à Healthchecks.io (secret PURGE_CHAT_PING_URL). Sans signal réussi pendant 10 + 15 min, ou sur
+ *  /fail, Healthchecks envoie un courriel à Louis : couvre aussi pg_cron arrêté, 401 de la passerelle et
+ *  jeton de Vault changé (aucun signal ne part). Jamais sur « jeton refusé » : un inconnu peut appeler. */
+async function signaler(ok: boolean, texte: string) {
+  const url = Deno.env.get("PURGE_CHAT_PING_URL");
+  if (!url) return console.warn("purge-chat : PURGE_CHAT_PING_URL absente, aucun signal");
+  try {
+    const r = await fetch(ok ? url : `${url}/fail`, { method: "POST", body: texte, signal: AbortSignal.timeout(5_000) });
+    if (!r.ok) console.error("purge-chat : signal refusé", r.status);
+  } catch (e) {
+    console.error("purge-chat : signal", e);
+  }
+}
+
 Deno.serve(async (req: Request) => {
   if (req.method !== "POST") return new Response(null, { status: 405 });
   const jeton = req.headers.get("x-purge-jeton");
@@ -39,7 +53,10 @@ Deno.serve(async (req: Request) => {
     if (error) {
       // 42501 vient aussi d'un droit EXECUTE manquant : seul le message distingue le jeton refusé
       const refuse = error.code === "42501" && error.message === "jeton refusé";
-      if (!refuse) console.error("purge-chat : rpc", error);
+      if (!refuse) {
+        console.error("purge-chat : rpc", error);
+        await signaler(false, `rpc chat_a_purger : ${error.code} ${error.message}`);
+      }
       return Response.json({ erreur: refuse ? "jeton refusé" : "échec", retires }, { status: refuse ? 403 : 500 });
     }
     noms = (data ?? []) as string[];
@@ -47,12 +64,17 @@ Deno.serve(async (req: Request) => {
     const { data: partis, error: e2 } = await sb.storage.from("chat").remove(noms);
     if (e2) {
       console.error("purge-chat : remove", e2);
+      await signaler(false, `storage remove : ${e2.message} (retirés ${retires}, demandés ${noms.length})`);
       return Response.json({ erreur: "échec", retires, demandes: noms.length }, { status: 500 });
     }
     retires += partis?.length ?? 0;
-    if (!partis?.length) break; // rien n'est parti : ne pas relire les mêmes noms jusqu'au budget
+    if (!partis?.length) { // rien n'est parti : fichiers coincés, ne pas relire les mêmes noms jusqu'au budget
+      await signaler(false, `storage remove n'a rien retiré (demandés ${noms.length})`); // aucun chemin : il porte des identifiants
+      return Response.json({ erreur: "rien retiré", retires, demandes: noms.length }, { status: 500 });
+    }
   } while (noms.length === LOT && Date.now() - debut < BUDGET_MS);
 
   console.log(JSON.stringify({ retires }));
+  await signaler(true, JSON.stringify({ retires }));
   return Response.json({ retires });
 });
