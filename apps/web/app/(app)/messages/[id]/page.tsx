@@ -250,7 +250,11 @@ export default function ThreadPage({ params }: { params: Promise<{ id: string }>
     URL.revokeObjectURL(objUrl);
     setUploading(true);
     try {
-      const path = await uploadChatPhoto(file, id, meId);
+      const debut = Date.now();
+      let path = await uploadChatPhoto(file, id, meId);
+      // onglet ou PWA suspendu pendant le dépôt : un fichier orphelin de plus de 15 min est retiré par la
+      // purge serveur (purge-chat) avant que le message ne le protège -> on redépose plutôt qu'envoyer un fantôme
+      if (Date.now() - debut > 10 * 60_000) path = await uploadChatPhoto(file, id, meId);
       await sendMessage(id, meId, "", path, viewOnce);
       notifyOthers(viewOnce ? "📸 Photo vue unique" : "📷 Photo");
     } catch {
